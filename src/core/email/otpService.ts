@@ -13,7 +13,7 @@ export const sendPendingOtp = async (email: string): Promise<void> => {
 
   const code = String(Math.floor(100000 + Math.random() * 900000));
   const codeHash = await bcrypt.hash(code, 10);
-  const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
   await PendingOtp.create({ email: normalizedEmail, code_hash: codeHash, verified: false, expires_at: expiresAt });
 
@@ -65,7 +65,7 @@ export const sendOtpFor = async (userId: number, email: string, purpose: OtpPurp
 
   const code = String(Math.floor(100000 + Math.random() * 900000));
   const codeHash = await bcrypt.hash(code, 10);
-  const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
   await OtpCode.create({ user_id: userId, code_hash: codeHash, purpose, expires_at: expiresAt });
 
@@ -81,14 +81,111 @@ export const sendOtpFor = async (userId: number, email: string, purpose: OtpPurp
 };
 
 const buildOtpEmail = (code: string): string => `
-  <div style="font-family: sans-serif; max-width: 480px; margin: auto; padding: 32px; background: #fafafa; border-radius: 12px;">
-    <h2 style="color: #1a1a1a; margin-bottom: 8px;">Confirme seu e-mail</h2>
-    <p style="color: #555; margin-bottom: 24px;">Use o código abaixo para verificar seu e-mail e continuar o cadastro na Avera.</p>
-    <div style="background: #fff; border: 1.5px solid #e0e0e0; border-radius: 8px; padding: 24px; text-align: center; margin-bottom: 24px;">
-      <span style="font-size: 36px; font-weight: 700; letter-spacing: 10px; color: #111;">${code}</span>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verificação de Email - Avera</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      background: white;
+      border-radius: 12px;
+      padding: 40px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .logo {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .logo h1 {
+      color: #16a34a;
+      font-size: 32px;
+      margin: 0;
+    }
+    .code-box {
+      background: #f8f9fa;
+      border: 2px solid #16a34a;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      margin: 20px 0;
+    }
+    .code {
+      font-size: 32px;
+      font-weight: bold;
+      letter-spacing: 8px;
+      color: #16a34a;
+      font-family: 'Courier New', monospace;
+    }
+    .code-label {
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 10px;
+    }
+    .expiry {
+      color: #6b7280;
+      font-size: 14px;
+      text-align: center;
+      margin-top: 10px;
+    }
+    .info {
+      background: #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .footer {
+      text-align: center;
+      color: #9ca3af;
+      font-size: 12px;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #e5e7eb;
+    }
+    @media only screen and (max-width: 600px) {
+      .container { padding: 20px; }
+      .code { font-size: 24px; letter-spacing: 4px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      <h1>Avera</h1>
     </div>
-    <p style="color: #888; font-size: 13px;">Este código expira em <strong>15 minutos</strong>. Não compartilhe com ninguém.</p>
-    <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
-    <p style="color: #aaa; font-size: 12px;">Se você não solicitou isso, ignore este e-mail.</p>
+
+    <h2 style="color: #1f2937; margin-bottom: 10px;">Confirme seu e-mail</h2>
+    <p style="color: #6b7280; margin-bottom: 20px;">
+      Para continuar o cadastro na Avera, use o código de verificação abaixo:
+    </p>
+
+    <div class="code-box">
+      <div class="code-label">Seu código de verificação:</div>
+      <div class="code">${code}</div>
+      <div class="expiry">⏱️ Válido por 10 minutos</div>
+    </div>
+
+    <div class="info">
+      <strong>💡 Atenção:</strong> Não compartilhe este código com ninguém. A Avera nunca solicita seu código por telefone ou chat.
+    </div>
+
+    <div class="footer">
+      <p>Se você não solicitou este código, ignore este e-mail.</p>
+      <p style="margin-top: 10px;">© ${new Date().getFullYear()} Avera. Todos os direitos reservados.</p>
+    </div>
   </div>
+</body>
+</html>
 `;
