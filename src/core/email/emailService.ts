@@ -10,20 +10,23 @@ interface SendEmailOptions {
 
 export const sendEmail = async ({ to, subject, html }: SendEmailOptions): Promise<void> => {
   const transporter = nodemailer.createTransport({
-    host: process.env.MAIL_HOST || 'smtp.hostinger.com',
-    port: Number(process.env.MAIL_PORT) || 587,
+    host: process.env.EMAIL_HOST || 'smtp.hostinger.com',
+    port: Number(process.env.EMAIL_PORT) || 587,
     secure: false,
     auth: {
-      user: process.env.MAIL_USER,
-      pass: process.env.MAIL_PASS,
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
     },
     tls: {
       rejectUnauthorized: true,
     },
   });
 
+  const fromName = process.env.EMAIL_FROM_NAME || 'Avera';
+  const fromUser = process.env.EMAIL_USER || 'no-reply@averatech.com.br';
+
   await transporter.sendMail({
-    from: process.env.MAIL_FROM || '"Avera" <noreply@avera.com.br>',
+    from: `"${fromName}" <${fromUser}>`,
     to,
     subject,
     html,
