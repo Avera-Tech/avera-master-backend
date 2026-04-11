@@ -9,20 +9,13 @@ interface UserAttributes {
   name: string;
   email: string;
   phone: string;
-  password: string;
   role: UserRole;
   active: 0 | 1;
-  reset_token?: string | null;
-  reset_token_expires?: Date | null;
-  token_version: number;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-type UserCreation = Optional<
-  UserAttributes,
-  'id' | 'role' | 'active' | 'reset_token' | 'reset_token_expires' | 'token_version'
->;
+type UserCreation = Optional<UserAttributes, 'id' | 'role' | 'active'>;
 
 class User extends Model<UserAttributes, UserCreation> implements UserAttributes {
   declare id: number;
@@ -30,12 +23,8 @@ class User extends Model<UserAttributes, UserCreation> implements UserAttributes
   declare name: string;
   declare email: string;
   declare phone: string;
-  declare password: string;
   declare role: UserRole;
   declare active: 0 | 1;
-  declare reset_token: string | null;
-  declare reset_token_expires: Date | null;
-  declare token_version: number;
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
 }
@@ -65,10 +54,6 @@ User.init(
       type: DataTypes.STRING(20),
       allowNull: false,
     },
-    password: {
-      type: DataTypes.STRING(255),
-      allowNull: false,
-    },
     role: {
       type: DataTypes.ENUM('admin', 'member'),
       allowNull: false,
@@ -76,19 +61,6 @@ User.init(
     },
     active: {
       type: DataTypes.TINYINT,
-      allowNull: false,
-      defaultValue: 0,
-    },
-    reset_token: {
-      type: DataTypes.STRING(255),
-      allowNull: true,
-    },
-    reset_token_expires: {
-      type: DataTypes.DATE,
-      allowNull: true,
-    },
-    token_version: {
-      type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 0,
     },

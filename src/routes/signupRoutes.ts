@@ -73,7 +73,7 @@ router.post('/verify-email', verifyEmail);
  *         application/json:
  *           schema:
  *             type: object
- *             required: [cnpj, segment, city, courts_count, plan, name, email, phone, password]
+ *             required: [cnpj, segment, city, courts_count, plan, name, email, phone]
  *             properties:
  *               cnpj:
  *                 type: string
@@ -91,8 +91,6 @@ router.post('/verify-email', verifyEmail);
  *               email:
  *                 type: string
  *               phone:
- *                 type: string
- *               password:
  *                 type: string
  *     responses:
  *       201:

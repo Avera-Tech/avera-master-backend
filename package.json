@@ -9,7 +9,8 @@
     "start:prod": "PORT=3100 NODE_ENV=production node dist/index.js",
     "build": "tsc",
     "ts.check": "tsc --project tsconfig.json",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "create:admin": "ts-node scripts/createAdmin.ts"
   },
   "keywords": [],
   "author": "",

@@ -28,4 +28,4 @@ export const sequelizeMaster = new Sequelize(
 );
  
 // Default export aponta para Core (usado pelos models de auth/signup)
-export default sequelizeCore;
+export default sequelizeMaster;

@@ -4,7 +4,7 @@ export interface AuthTokenPayload {
   id: number;
   tenantId: number;
   name: string;
-  role: 'admin' | 'member';
+  role: 'admin' | 'member' | 'avera_admin';
 }
 
 declare global {

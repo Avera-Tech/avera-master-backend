@@ -14,7 +14,7 @@ Promise.all([
     console.log('[DB] Master  → conectado ✓');
 
     // ← adicione essa linha
-    await sequelizeCore.sync({ alter: true });
+    await sequelizeMaster.sync({ alter: true });
     console.log('[DB] Tabelas sincronizadas ✓');
 
     app.listen(PORT, () => {
