@@ -58,6 +58,48 @@ export const adminLogin = async (req: Request, res: Response): Promise<Response>
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// POST /admin/users
+// Creates a new Avera admin user — requires an authenticated AdminUser
+// ─────────────────────────────────────────────────────────────────────────────
+export const createAdminUser = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ success: false, error: 'name, email and password are required' });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({ success: false, error: 'Password must be at least 8 characters' });
+    }
+
+    const normalizedEmail = normalizeEmail(email);
+
+    const existing = await AdminUser.findOne({ where: { email: normalizedEmail } });
+    if (existing) {
+      return res.status(409).json({ success: false, error: 'Email already registered' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const admin = await AdminUser.create({
+      name:     name.trim(),
+      email:    normalizedEmail,
+      password: passwordHash,
+      active:   true,
+    });
+
+    return res.status(201).json({
+      success: true,
+      user: { id: admin.id, name: admin.name, email: admin.email, active: admin.active },
+    });
+  } catch (error: any) {
+    console.error('[admin/users/create]', error);
+    return res.status(500).json({ success: false, error: 'Internal server error', detail: error?.message });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // GET /admin/auth/me
 // Returns the logged-in admin's data
 // ─────────────────────────────────────────────────────────────────────────────

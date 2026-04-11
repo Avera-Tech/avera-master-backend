@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { adminLogin, adminMe } from '../controllers/adminAuthController';
+import { adminLogin, adminMe, createAdminUser } from '../controllers/adminAuthController';
 import {
   listTenants,
   getTenant,
@@ -15,6 +15,9 @@ const router = Router();
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 router.post('/auth/login', adminLogin);
 router.get('/auth/me',     adminAuth, adminMe);
+
+// ─── Admin Users ──────────────────────────────────────────────────────────────
+router.post('/users', adminAuth, createAdminUser);
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 router.get('/dashboard', adminAuth, getDashboard);
