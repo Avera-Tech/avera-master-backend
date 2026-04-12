@@ -33,9 +33,9 @@ router.delete('/users/:id', adminAuth, deleteAdminUser);
 router.get('/dashboard', adminAuth, getDashboard);
 
 // ─── Tenants ──────────────────────────────────────────────────────────────────
-router.get   ('/',               adminAuth, listTenants);
-router.get   ('/:id',            adminAuth, getTenant);
-router.patch ('/:id/status',     adminAuth, updateTenantStatus);
-router.patch ('/:id/plan',       adminAuth, updateTenantPlan);
+router.get   ('/tenants',              adminAuth, listTenants);
+router.get   ('/tenants/:id',          adminAuth, getTenant);
+router.patch ('/tenants/:id/status',   adminAuth, updateTenantStatus);
+router.patch ('/tenants/:id/plan',     adminAuth, updateTenantPlan);
 
 export default router;
