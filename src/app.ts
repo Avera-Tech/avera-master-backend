@@ -7,12 +7,13 @@ import signupRoute   from './routes/signupRoutes';
 import authRoute     from './routes/authRoutes';
 import internalRoute from './routes/internalRoutes';
 import adminRoute    from './routes/adminRoutes';
+import planRoute     from './routes/planRoutes';
 
 require('dotenv').config();
 
 const app: Application = express();
 
-// ─── CORS ───────────────────────────────────────────────────────────────────
+// ─── CORS ────────────────────────────────────────────────────────────────────
 const corsOptions = {
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
@@ -30,6 +31,7 @@ app.use('/signup',    signupRoute);
 app.use('/auth',      authRoute);
 app.use('/internal',  internalRoute);  // backend-to-backend only
 app.use('/admin',     adminRoute);     // Avera admin panel
+app.use('/admin/plans',     planRoute);      // Plans CRUD
 
 // ─── 404 ─────────────────────────────────────────────────────────────────────
 app.use((_req: Request, res: Response) => {
