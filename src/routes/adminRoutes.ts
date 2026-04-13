@@ -10,6 +10,8 @@ import {
 import {
   listTenants,
   getTenant,
+} from '../controllers/tenantsController';
+import {
   updateTenantStatus,
   updateTenantPlan,
   getDashboard,
@@ -20,7 +22,7 @@ const router = Router();
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 router.post('/auth/login', adminLogin);
-router.get('/auth/me',     adminAuth, adminMe);
+router.get ('/auth/me',    adminAuth, adminMe);
 
 // ─── Admin Users ──────────────────────────────────────────────────────────────
 router.get   ('/users',     adminAuth, listAdminUsers);
@@ -33,9 +35,9 @@ router.delete('/users/:id', adminAuth, deleteAdminUser);
 router.get('/dashboard', adminAuth, getDashboard);
 
 // ─── Tenants ──────────────────────────────────────────────────────────────────
-router.get   ('/tenants',              adminAuth, listTenants);
-router.get   ('/tenants/:id',          adminAuth, getTenant);
-router.patch ('/tenants/:id/status',   adminAuth, updateTenantStatus);
-router.patch ('/tenants/:id/plan',     adminAuth, updateTenantPlan);
+router.get   ('/tenants',            adminAuth, listTenants);
+router.get   ('/tenants/:id',        adminAuth, getTenant);
+router.patch ('/tenants/:id/status', adminAuth, updateTenantStatus);
+router.patch ('/tenants/:id/plan',   adminAuth, updateTenantPlan);
 
 export default router;
