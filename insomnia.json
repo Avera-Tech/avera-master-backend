@@ -1,0 +1,514 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-04-15T00:00:00.000Z",
+  "__export_source": "avera-master-backend",
+  "resources": [
+
+    {
+      "_id": "wrk_avera",
+      "_type": "workspace",
+      "parentId": null,
+      "name": "Avera Master Backend",
+      "description": "API do backend master da plataforma Avera"
+    },
+
+    {
+      "_id": "env_base",
+      "_type": "environment",
+      "parentId": "wrk_avera",
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://localhost:3100",
+        "admin_token": "",
+        "tenant_token": "",
+        "internal_secret": ""
+      }
+    },
+
+    {
+      "_id": "fld_geral",
+      "_type": "request_group",
+      "parentId": "wrk_avera",
+      "name": "🏠 Geral",
+      "description": ""
+    },
+    {
+      "_id": "fld_signup",
+      "_type": "request_group",
+      "parentId": "wrk_avera",
+      "name": "📝 Signup",
+      "description": "Fluxo de cadastro de novos tenants em 3 passos"
+    },
+    {
+      "_id": "fld_auth",
+      "_type": "request_group",
+      "parentId": "wrk_avera",
+      "name": "🔐 Auth (Tenant)",
+      "description": "Autenticação de usuários de tenant"
+    },
+    {
+      "_id": "fld_admin_auth",
+      "_type": "request_group",
+      "parentId": "wrk_avera",
+      "name": "🔒 Admin — Auth",
+      "description": "Login e sessão do painel Avera"
+    },
+    {
+      "_id": "fld_admin_users",
+      "_type": "request_group",
+      "parentId": "wrk_avera",
+      "name": "👥 Admin — Usuários",
+      "description": "CRUD de usuários do painel Avera"
+    },
+    {
+      "_id": "fld_admin_dashboard",
+      "_type": "request_group",
+      "parentId": "wrk_avera",
+      "name": "📊 Admin — Dashboard",
+      "description": "Métricas gerais da plataforma"
+    },
+    {
+      "_id": "fld_admin_tenants",
+      "_type": "request_group",
+      "parentId": "wrk_avera",
+      "name": "🏢 Admin — Tenants",
+      "description": "Listagem, detalhes e gestão de tenants"
+    },
+    {
+      "_id": "fld_admin_plans",
+      "_type": "request_group",
+      "parentId": "wrk_avera",
+      "name": "💳 Admin — Planos",
+      "description": "CRUD de planos de assinatura"
+    },
+    {
+      "_id": "fld_admin_invites",
+      "_type": "request_group",
+      "parentId": "wrk_avera",
+      "name": "✉️ Admin — Convites",
+      "description": "Envio e gerenciamento de convites"
+    },
+    {
+      "_id": "fld_invites_pub",
+      "_type": "request_group",
+      "parentId": "wrk_avera",
+      "name": "🔗 Invites (Público)",
+      "description": "Validação de token — sem autenticação"
+    },
+    {
+      "_id": "fld_internal",
+      "_type": "request_group",
+      "parentId": "wrk_avera",
+      "name": "⚙️ Internal",
+      "description": "Backend-to-backend — requer X-Internal-Secret"
+    },
+
+    {
+      "_id": "req_health",
+      "_type": "request",
+      "parentId": "fld_geral",
+      "name": "Health Check",
+      "method": "GET",
+      "url": "{{ base_url }}/",
+      "headers": [],
+      "body": {}
+    },
+
+    {
+      "_id": "req_signup_send_otp",
+      "_type": "request",
+      "parentId": "fld_signup",
+      "name": "1. Enviar OTP",
+      "method": "POST",
+      "url": "{{ base_url }}/signup/send-otp",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"cliente@empresa.com\",\n  \"company_name\": \"Academia Exemplo\"\n}"
+      }
+    },
+    {
+      "_id": "req_signup_verify",
+      "_type": "request",
+      "parentId": "fld_signup",
+      "name": "2. Verificar Email (OTP)",
+      "method": "POST",
+      "url": "{{ base_url }}/signup/verify-email",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"cliente@empresa.com\",\n  \"code\": \"123456\"\n}"
+      }
+    },
+    {
+      "_id": "req_signup_resend",
+      "_type": "request",
+      "parentId": "fld_signup",
+      "name": "Reenviar OTP",
+      "method": "POST",
+      "url": "{{ base_url }}/signup/resend-otp",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"cliente@empresa.com\"\n}"
+      }
+    },
+    {
+      "_id": "req_signup_register",
+      "_type": "request",
+      "parentId": "fld_signup",
+      "name": "3. Registrar (Finalizar cadastro)",
+      "method": "POST",
+      "url": "{{ base_url }}/signup/register",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"cnpj\": \"12345678000199\",\n  \"company_name\": \"Academia Exemplo\",\n  \"segment\": \"Academia\",\n  \"city\": \"São Paulo\",\n  \"phone\": \"11999998888\",\n  \"courts_count\": \"5\",\n  \"plan\": \"starter\",\n  \"name\": \"João Silva\",\n  \"email\": \"cliente@empresa.com\"\n}"
+      }
+    },
+
+    {
+      "_id": "req_auth_me",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Me (usuário autenticado)",
+      "method": "GET",
+      "url": "{{ base_url }}/auth/me",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ tenant_token }}" }
+      ],
+      "body": {}
+    },
+
+    {
+      "_id": "req_admin_login",
+      "_type": "request",
+      "parentId": "fld_admin_auth",
+      "name": "Login",
+      "method": "POST",
+      "url": "{{ base_url }}/admin/auth/login",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"admin@avera.com.br\",\n  \"password\": \"sua_senha_aqui\"\n}"
+      }
+    },
+    {
+      "_id": "req_admin_me",
+      "_type": "request",
+      "parentId": "fld_admin_auth",
+      "name": "Me (admin autenticado)",
+      "method": "GET",
+      "url": "{{ base_url }}/admin/auth/me",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ admin_token }}" }
+      ],
+      "body": {}
+    },
+
+    {
+      "_id": "req_admin_users_list",
+      "_type": "request",
+      "parentId": "fld_admin_users",
+      "name": "Listar usuários",
+      "method": "GET",
+      "url": "{{ base_url }}/admin/users",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ admin_token }}" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_admin_users_get",
+      "_type": "request",
+      "parentId": "fld_admin_users",
+      "name": "Buscar usuário por ID",
+      "method": "GET",
+      "url": "{{ base_url }}/admin/users/1",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ admin_token }}" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_admin_users_create",
+      "_type": "request",
+      "parentId": "fld_admin_users",
+      "name": "Criar usuário",
+      "method": "POST",
+      "url": "{{ base_url }}/admin/users",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ admin_token }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Pedro Admin\",\n  \"email\": \"pedro@avera.com.br\",\n  \"password\": \"senha_segura\"\n}"
+      }
+    },
+    {
+      "_id": "req_admin_users_update",
+      "_type": "request",
+      "parentId": "fld_admin_users",
+      "name": "Atualizar usuário",
+      "method": "PUT",
+      "url": "{{ base_url }}/admin/users/1",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ admin_token }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Pedro Admin Atualizado\",\n  \"active\": true\n}"
+      }
+    },
+    {
+      "_id": "req_admin_users_delete",
+      "_type": "request",
+      "parentId": "fld_admin_users",
+      "name": "Deletar usuário",
+      "method": "DELETE",
+      "url": "{{ base_url }}/admin/users/1",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ admin_token }}" }
+      ],
+      "body": {}
+    },
+
+    {
+      "_id": "req_dashboard",
+      "_type": "request",
+      "parentId": "fld_admin_dashboard",
+      "name": "Métricas gerais",
+      "method": "GET",
+      "url": "{{ base_url }}/admin/dashboard",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ admin_token }}" }
+      ],
+      "body": {}
+    },
+
+    {
+      "_id": "req_tenants_list",
+      "_type": "request",
+      "parentId": "fld_admin_tenants",
+      "name": "Listar tenants",
+      "method": "GET",
+      "url": "{{ base_url }}/admin/tenants?page=1&limit=20",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ admin_token }}" }
+      ],
+      "body": {},
+      "description": "Filtros opcionais: status, plan, search"
+    },
+    {
+      "_id": "req_tenants_list_filtered",
+      "_type": "request",
+      "parentId": "fld_admin_tenants",
+      "name": "Listar tenants (com filtros)",
+      "method": "GET",
+      "url": "{{ base_url }}/admin/tenants?status=active&plan=starter&search=academia&page=1&limit=20",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ admin_token }}" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_tenants_get",
+      "_type": "request",
+      "parentId": "fld_admin_tenants",
+      "name": "Buscar tenant por ID",
+      "method": "GET",
+      "url": "{{ base_url }}/admin/tenants/1",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ admin_token }}" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_tenants_status",
+      "_type": "request",
+      "parentId": "fld_admin_tenants",
+      "name": "Atualizar status do tenant",
+      "method": "PATCH",
+      "url": "{{ base_url }}/admin/tenants/1/status",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ admin_token }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"status\": \"active\"\n}"
+      },
+      "description": "Valores: active | suspended | cancelled | pending_provision"
+    },
+    {
+      "_id": "req_tenants_plan",
+      "_type": "request",
+      "parentId": "fld_admin_tenants",
+      "name": "Atualizar plano do tenant",
+      "method": "PATCH",
+      "url": "{{ base_url }}/admin/tenants/1/plan",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ admin_token }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"plan\": \"professional\"\n}"
+      },
+      "description": "Valores: starter | professional | enterprise"
+    },
+
+    {
+      "_id": "req_plans_list",
+      "_type": "request",
+      "parentId": "fld_admin_plans",
+      "name": "Listar planos",
+      "method": "GET",
+      "url": "{{ base_url }}/admin/plans",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ admin_token }}" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_plans_get",
+      "_type": "request",
+      "parentId": "fld_admin_plans",
+      "name": "Buscar plano por ID",
+      "method": "GET",
+      "url": "{{ base_url }}/admin/plans/1",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ admin_token }}" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_plans_create",
+      "_type": "request",
+      "parentId": "fld_admin_plans",
+      "name": "Criar plano",
+      "method": "POST",
+      "url": "{{ base_url }}/admin/plans",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ admin_token }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Starter\",\n  \"price\": 199.90,\n  \"trial_days\": 14,\n  \"description\": \"Plano ideal para academias em início de operação\",\n  \"status\": \"active\"\n}"
+      }
+    },
+    {
+      "_id": "req_plans_update",
+      "_type": "request",
+      "parentId": "fld_admin_plans",
+      "name": "Atualizar plano",
+      "method": "PUT",
+      "url": "{{ base_url }}/admin/plans/1",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ admin_token }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"price\": 219.90,\n  \"trial_days\": 7,\n  \"status\": \"active\"\n}"
+      }
+    },
+    {
+      "_id": "req_plans_delete",
+      "_type": "request",
+      "parentId": "fld_admin_plans",
+      "name": "Deletar plano",
+      "method": "DELETE",
+      "url": "{{ base_url }}/admin/plans/1",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ admin_token }}" }
+      ],
+      "body": {}
+    },
+
+    {
+      "_id": "req_invites_create",
+      "_type": "request",
+      "parentId": "fld_admin_invites",
+      "name": "Criar convite (enviar email)",
+      "method": "POST",
+      "url": "{{ base_url }}/admin/invites",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ admin_token }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"prospecto@empresa.com\",\n  \"nome\": \"Maria Oliveira\",\n  \"nomeRemetente\": \"Pedro (Avera)\"\n}"
+      }
+    },
+    {
+      "_id": "req_invites_list",
+      "_type": "request",
+      "parentId": "fld_admin_invites",
+      "name": "Listar convites",
+      "method": "GET",
+      "url": "{{ base_url }}/admin/invites",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ admin_token }}" }
+      ],
+      "body": {},
+      "description": "Filtro opcional: ?status=pending|accepted|expired|revoked"
+    },
+    {
+      "_id": "req_invites_list_pending",
+      "_type": "request",
+      "parentId": "fld_admin_invites",
+      "name": "Listar convites pendentes",
+      "method": "GET",
+      "url": "{{ base_url }}/admin/invites?status=pending",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ admin_token }}" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_invites_revoke",
+      "_type": "request",
+      "parentId": "fld_admin_invites",
+      "name": "Revogar convite",
+      "method": "DELETE",
+      "url": "{{ base_url }}/admin/invites/1",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ admin_token }}" }
+      ],
+      "body": {}
+    },
+
+    {
+      "_id": "req_invite_validate",
+      "_type": "request",
+      "parentId": "fld_invites_pub",
+      "name": "Validar token de convite",
+      "method": "GET",
+      "url": "{{ base_url }}/invites/validate?token=cole_o_token_aqui",
+      "headers": [],
+      "body": {},
+      "description": "Retorna o email pré-preenchido se o token for válido. Usado pelo frontend antes do signup."
+    },
+
+    {
+      "_id": "req_internal_tenant",
+      "_type": "request",
+      "parentId": "fld_internal",
+      "name": "Buscar tenant por email",
+      "method": "GET",
+      "url": "{{ base_url }}/internal/tenant/cliente@empresa.com",
+      "headers": [
+        { "name": "X-Internal-Secret", "value": "{{ internal_secret }}" }
+      ],
+      "body": {},
+      "description": "Retorna tenant + user + features. Usado pelo Core backend no login."
+    }
+
+  ]
+}

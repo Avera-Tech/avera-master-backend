@@ -16,6 +16,11 @@ import {
   updateTenantPlan,
   getDashboard,
 } from '../controllers/adminController';
+import {
+  createInvite,
+  listInvites,
+  revokeInvite,
+} from '../controllers/inviteController';
 import { adminAuth } from '../middleware/adminAuth';
 
 const router = Router();
@@ -39,5 +44,10 @@ router.get   ('/tenants',            adminAuth, listTenants);
 router.get   ('/tenants/:id',        adminAuth, getTenant);
 router.patch ('/tenants/:id/status', adminAuth, updateTenantStatus);
 router.patch ('/tenants/:id/plan',   adminAuth, updateTenantPlan);
+
+// ─── Invites ──────────────────────────────────────────────────────────────────
+router.post  ('/invites',     adminAuth, createInvite);
+router.get   ('/invites',     adminAuth, listInvites);
+router.delete('/invites/:id', adminAuth, revokeInvite);
 
 export default router;

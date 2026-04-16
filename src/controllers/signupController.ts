@@ -12,6 +12,8 @@ import {
   consumePendingOtp,
 } from '../core/email/otpService';
 import generateAuthToken from '../core/token/generateAuthToken';
+import { acceptInviteToken } from './inviteController';
+import { sendEmail } from '../core/email/emailService';
 
 const normalizeEmail = (e?: string) => String(e || '').trim().toLowerCase();
 const normalizeCnpj  = (c?: string) => String(c || '').replace(/\D/g, '');
@@ -138,6 +140,7 @@ export const register = async (req: Request, res: Response): Promise<Response> =
       plan,
       name,
       email,
+      invite_token,
     } = req.body;
 
     // ── Required fields validation ────────────────────────────────────────────
@@ -243,6 +246,11 @@ export const register = async (req: Request, res: Response): Promise<Response> =
     // ── Consume used PendingOtp ───────────────────────────────────────────────
     await consumePendingOtp(normalizedEmail);
 
+    // ── Mark invite as accepted (if signup came from an invite link) ──────────
+    if (invite_token) {
+      await acceptInviteToken(String(invite_token));
+    }
+
     // ── Provision features for this plan (outside transaction — safe to retry)
     await provisionFeatures(tenant.id, plan);
 
@@ -251,6 +259,19 @@ export const register = async (req: Request, res: Response): Promise<Response> =
 
     // ── Reload tenant to get updated status (provisionService may have set pending_provision)
     const updatedTenant = await Tenant.findByPk(tenant.id);
+
+    // ── Notify Avera team about the new registration ──────────────────────────
+    await sendNewTenantNotification({
+      companyName:  tenant.company_name,
+      cnpj:         normalizedCnpj,
+      segment:      tenant.segment,
+      city:         tenant.city,
+      plan:         tenant.plan,
+      adminName:    user.name,
+      adminEmail:   user.email,
+      tenantId:     tenant.id,
+      fromInvite:   !!invite_token,
+    });
 
     // ── Generate JWT ──────────────────────────────────────────────────────────
     const token = generateAuthToken({
@@ -286,5 +307,146 @@ export const register = async (req: Request, res: Response): Promise<Response> =
     if (!committed) await t.rollback();
     console.error('[signup/register]', error);
     return res.status(500).json({ success: false, error: 'Registration failed', detail: error?.message });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// sendNewTenantNotification (private)
+// Notifica a equipe Avera quando um novo tenant completa o cadastro.
+// ─────────────────────────────────────────────────────────────────────────────
+interface NewTenantNotificationParams {
+  companyName:  string;
+  cnpj:         string;
+  segment:      string;
+  city:         string;
+  plan:         string;
+  adminName:    string;
+  adminEmail:   string;
+  tenantId:     number;
+  fromInvite:   boolean;
+}
+
+const sendNewTenantNotification = async (params: NewTenantNotificationParams): Promise<void> => {
+  const teamEmail = process.env.AVERA_TEAM_EMAIL;
+
+  if (!teamEmail) {
+    console.warn('[signup] AVERA_TEAM_EMAIL not set — skipping team notification');
+    return;
+  }
+
+  const {
+    companyName, cnpj, segment, city,
+    plan, adminName, adminEmail, tenantId, fromInvite,
+  } = params;
+
+  const planLabel: Record<string, string> = {
+    starter:      'Starter',
+    professional: 'Professional',
+    enterprise:   'Enterprise',
+  };
+
+  const adminPanelUrl = `${process.env.FRONTEND_URL}/admin/tenants/${tenantId}`;
+
+  try {
+    await sendEmail({
+      to:      teamEmail,
+      subject: `[Avera] Novo cadastro — ${companyName}`,
+      html: `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Novo Cadastro</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f3f4f6;font-family:Arial,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f4f6;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e5e7eb;">
+
+          <!-- Header -->
+          <tr>
+            <td align="center" style="background-color:#317a52;padding:24px 32px;">
+              <img
+                src="https://averatech.com.br/assets/avera-logo-white-fFM6UW1P.svg"
+                alt="Avera"
+                width="120"
+                style="display:block;height:auto;border:0;"
+              />
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:40px 40px 32px;">
+              <h1 style="margin:0 0 4px;font-size:20px;font-weight:700;color:#111827;">
+                Novo cadastro realizado!
+              </h1>
+              ${fromInvite ? `<p style="margin:0 0 24px;font-size:12px;color:#317a52;font-weight:600;">✓ Veio de um convite</p>` : `<p style="margin:0 0 24px;font-size:12px;color:#6b7280;">Cadastro orgânico</p>`}
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;margin-bottom:28px;">
+                <tr>
+                  <td style="padding:10px 16px;background:#f9fafb;font-size:12px;font-weight:700;color:#374151;width:40%;border-bottom:1px solid #e5e7eb;">Empresa</td>
+                  <td style="padding:10px 16px;font-size:13px;color:#111827;border-bottom:1px solid #e5e7eb;">${companyName}</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 16px;background:#f9fafb;font-size:12px;font-weight:700;color:#374151;border-bottom:1px solid #e5e7eb;">CNPJ</td>
+                  <td style="padding:10px 16px;font-size:13px;color:#111827;font-family:monospace;border-bottom:1px solid #e5e7eb;">${cnpj}</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 16px;background:#f9fafb;font-size:12px;font-weight:700;color:#374151;border-bottom:1px solid #e5e7eb;">Segmento</td>
+                  <td style="padding:10px 16px;font-size:13px;color:#111827;border-bottom:1px solid #e5e7eb;">${segment}</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 16px;background:#f9fafb;font-size:12px;font-weight:700;color:#374151;border-bottom:1px solid #e5e7eb;">Cidade</td>
+                  <td style="padding:10px 16px;font-size:13px;color:#111827;border-bottom:1px solid #e5e7eb;">${city}</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 16px;background:#f9fafb;font-size:12px;font-weight:700;color:#374151;border-bottom:1px solid #e5e7eb;">Plano</td>
+                  <td style="padding:10px 16px;font-size:13px;color:#317a52;font-weight:600;border-bottom:1px solid #e5e7eb;">${planLabel[plan] ?? plan}</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 16px;background:#f9fafb;font-size:12px;font-weight:700;color:#374151;border-bottom:1px solid #e5e7eb;">Responsável</td>
+                  <td style="padding:10px 16px;font-size:13px;color:#111827;border-bottom:1px solid #e5e7eb;">${adminName}</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 16px;background:#f9fafb;font-size:12px;font-weight:700;color:#374151;">Email</td>
+                  <td style="padding:10px 16px;font-size:13px;color:#111827;">${adminEmail}</td>
+                </tr>
+              </table>
+
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center">
+                    <a href="${adminPanelUrl}"
+                       style="display:inline-block;background-color:#317a52;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;padding:12px 32px;border-radius:8px;">
+                      Ver no painel admin
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="padding:16px 32px;background-color:#f9fafb;border-top:1px solid #e5e7eb;">
+              <p style="margin:0;font-size:11px;color:#9ca3af;">
+                © ${new Date().getFullYear()} Avera. Notificação interna.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`,
+    });
+
+    console.log(`[signup] Team notification sent to ${teamEmail}`);
+  } catch (err: any) {
+    console.error('[signup] Failed to send team notification:', err?.message);
   }
 };

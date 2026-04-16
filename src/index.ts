@@ -1,9 +1,41 @@
 import app from './app';
 import { sequelizeCore, sequelizeMaster } from './config/database';
+import { QueryTypes } from 'sequelize';
 
 require('dotenv').config();
 
 const PORT = process.env.PORT || 3100;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// runMigrations
+// Adiciona colunas que não existem em tabelas já criadas.
+// Seguro para rodar em todo boot — ignora se a coluna já existir.
+// ─────────────────────────────────────────────────────────────────────────────
+async function addColumnIfNotExists(
+  table: string,
+  column: string,
+  definition: string
+): Promise<void> {
+  try {
+    await sequelizeMaster.query(
+      `ALTER TABLE \`${table}\` ADD COLUMN \`${column}\` ${definition}`,
+      { type: QueryTypes.RAW }
+    );
+    console.log(`[migration] ${table}.${column} adicionado ✓`);
+  } catch (err: any) {
+    if (err?.original?.errno === 1060) return; // ER_DUP_FIELDNAME — coluna já existe
+    throw err;
+  }
+}
+
+async function runMigrations(): Promise<void> {
+  await addColumnIfNotExists(
+    'invites',
+    'nome',
+    "VARCHAR(150) NULL DEFAULT NULL COMMENT 'Name of the invited person (optional)' AFTER `email`"
+  );
+  console.log('[migration] Concluído ✓');
+}
 
 Promise.all([
   sequelizeCore.authenticate(),
@@ -13,9 +45,12 @@ Promise.all([
     console.log('[DB] Core    → conectado ✓');
     console.log('[DB] Master  → conectado ✓');
 
-    // ← adicione essa linha
-    await sequelizeMaster.sync({ alter: true });
+    // Cria tabelas novas (não altera as existentes — evita duplicação de indexes)
+    await sequelizeMaster.sync();
     console.log('[DB] Tabelas sincronizadas ✓');
+
+    // Migrações pontuais — adiciona colunas sem recriar constraints
+    await runMigrations();
 
     app.listen(PORT, () => {
       console.log(`[SERVER] Avera Backend rodando na porta ${PORT}`);

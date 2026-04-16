@@ -8,6 +8,7 @@ import authRoute     from './routes/authRoutes';
 import internalRoute from './routes/internalRoutes';
 import adminRoute    from './routes/adminRoutes';
 import planRoute     from './routes/planRoutes';
+import inviteRoute   from './routes/inviteRoutes';
 
 require('dotenv').config();
 
@@ -32,6 +33,7 @@ app.use('/auth',      authRoute);
 app.use('/internal',  internalRoute);  // backend-to-backend only
 app.use('/admin',     adminRoute);     // Avera admin panel
 app.use('/admin/plans',     planRoute);      // Plans CRUD
+app.use('/invites',         inviteRoute);    // Public invite token validation
 
 // ─── 404 ─────────────────────────────────────────────────────────────────────
 app.use((_req: Request, res: Response) => {
