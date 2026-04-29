@@ -1,0 +1,56 @@
+name: Deploy Master Backend (production)
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  backend:
+    name: Deploy Master Backend to VPS
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/github_deploy
+          chmod 600 ~/.ssh/github_deploy
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy Master Backend
+        run: |
+          ssh -i ~/.ssh/github_deploy -o StrictHostKeyChecking=no root@${{ secrets.VPS_HOST }} << 'EOF'
+            if [ ! -d "/www/wwwroot/master-backend/.git" ]; then
+              rm -rf /www/wwwroot/master-backend
+              git clone git@github.com:Avera-Tech/avera-master-backend.git /www/wwwroot/master-backend
+            fi
+            cd /www/wwwroot/master-backend
+            git pull origin master
+            {
+              echo 'NODE_ENV=production'
+              echo 'PORT=3100'
+              echo 'APP_URL=https://backend.averatech.com.br/'
+              echo 'JWT_SECRET=${{ secrets.MASTER_JWT_SECRET }}'
+              echo 'JWT_EXPIRES_IN=24h'
+              echo 'DB_CORE_HOST=${{ secrets.MASTER_DB_CORE_HOST }}'
+              echo 'DB_CORE_NAME=${{ secrets.MASTER_DB_CORE_NAME }}'
+              echo 'DB_CORE_USER=${{ secrets.MASTER_DB_CORE_USER }}'
+              echo 'DB_CORE_PASS=${{ secrets.MASTER_DB_CORE_PASS }}'
+              echo 'DB_MASTER_HOST=${{ secrets.MASTER_DB_MASTER_HOST }}'
+              echo 'DB_MASTER_NAME=${{ secrets.MASTER_DB_MASTER_NAME }}'
+              echo 'DB_MASTER_USER=${{ secrets.MASTER_DB_MASTER_USER }}'
+              echo 'DB_MASTER_PASS=${{ secrets.MASTER_DB_MASTER_PASS }}'
+              echo 'EMAIL_HOST=smtp.hostinger.com'
+              echo 'EMAIL_PORT=587'
+              echo 'EMAIL_USER=no-reply@averatech.com.br'
+              echo 'EMAIL_PASS=${{ secrets.MASTER_EMAIL_PASS }}'
+              echo 'EMAIL_FROM_NAME=Avera'
+            } > .env
+            npm install
+            npm run build
+            su -s /bin/bash www -c "cd /www/wwwroot/master-backend && pm2 startOrReload ecosystem.config.js --env production && pm2 save"
+          EOF

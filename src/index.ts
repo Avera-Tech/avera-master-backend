@@ -2,7 +2,7 @@ import app from './app';
 import { sequelizeCore, sequelizeMaster } from './config/database';
 import { QueryTypes } from 'sequelize';
 
-require('dotenv').config();
+require('dotenv').config({ path: require('path').resolve(__dirname, '..', '.env') });
 
 const PORT = process.env.PORT || 3100;
 
