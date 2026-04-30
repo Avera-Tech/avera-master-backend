@@ -2,7 +2,7 @@ name: Deploy Master Backend (production)
 
 on:
   push:
-    branches: [master]
+    branches: [main]
 
 jobs:
   backend:
@@ -29,7 +29,7 @@ jobs:
               git clone git@github.com:Avera-Tech/avera-master-backend.git /www/wwwroot/master-backend
             fi
             cd /www/wwwroot/master-backend
-            git pull origin master
+            git pull origin main
             {
               echo 'NODE_ENV=production'
               echo 'PORT=3100'
