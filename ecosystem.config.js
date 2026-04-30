@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: 'avera-master-backend',
+      name: 'avera_backend_master',
       script: 'dist/index.js',
       cwd: '/www/wwwroot/master-backend',
       instances: 1,
