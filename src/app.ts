@@ -10,7 +10,7 @@ import adminRoute    from './routes/adminRoutes';
 import planRoute     from './routes/planRoutes';
 import inviteRoute   from './routes/inviteRoutes';
 
-require('dotenv').config();
+require('dotenv').config({ path: require('path').resolve(__dirname, '..', '.env') });
 
 const app: Application = express();
 
