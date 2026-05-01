@@ -4,6 +4,7 @@ import Tenant from '../models/Tenant.model';
 import User from '../models/User.model';
 import Feature from '../models/Feature.model';
 import { provisionFeatures } from '../services/featureService';
+import { syncControlTenantConfig } from '../services/controlSyncService';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /admin/tenants
@@ -117,6 +118,9 @@ export const updateTenantStatus = async (req: Request, res: Response): Promise<R
     }
 
     await tenant.update({ status });
+    syncControlTenantConfig(tenant).catch((err) =>
+      console.error('[admin/status] controlSync error:', err?.message)
+    );
 
     return res.status(200).json({
       success: true,
@@ -153,6 +157,9 @@ export const updateTenantPlan = async (req: Request, res: Response): Promise<Res
 
     // Re-sync features for the new plan
     await provisionFeatures(tenant.id, plan);
+    syncControlTenantConfig(tenant).catch((err) =>
+      console.error('[admin/plan] controlSync error:', err?.message)
+    );
 
     return res.status(200).json({
       success: true,

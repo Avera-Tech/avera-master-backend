@@ -15,44 +15,46 @@ export type TenantSegment =
   | 'Centro Multiesportivo';
 
 interface TenantAttributes {
-  id:              number;
-  cnpj:            string;
-  company_name:    string;
-  slug:            string;
-  segment:         TenantSegment;
-  city:            string;
-  phone:           string | null;
-  courts_count:    string;
-  plan:            TenantPlan;
-  status:          TenantStatus;
-  trial_starts_at: Date | null;
-  trial_ends_at:   Date | null;
-  db_name:         string | null;
-  createdAt?:      Date;
-  updatedAt?:      Date;
+  id:               number;
+  cnpj:             string;
+  company_name:     string;
+  slug:             string;
+  segment:          TenantSegment;
+  city:             string;
+  phone:            string | null;
+  courts_count:     string;
+  plan:             TenantPlan;
+  status:           TenantStatus;
+  trial_starts_at:  Date | null;
+  trial_ends_at:    Date | null;
+  db_name:          string | null;
+  control_api_url:  string | null;
+  createdAt?:       Date;
+  updatedAt?:       Date;
 }
 
 type TenantCreationAttributes = Optional<
   TenantAttributes,
-  'id' | 'status' | 'phone' | 'trial_starts_at' | 'trial_ends_at' | 'db_name'
+  'id' | 'status' | 'phone' | 'trial_starts_at' | 'trial_ends_at' | 'db_name' | 'control_api_url'
 >;
 
 class Tenant
   extends Model<TenantAttributes, TenantCreationAttributes>
   implements TenantAttributes {
-  declare id:              number;
-  declare cnpj:            string;
-  declare company_name:    string;
-  declare slug:            string;
-  declare segment:         TenantSegment;
-  declare city:            string;
-  declare phone:           string | null;
-  declare courts_count:    string;
-  declare plan:            TenantPlan;
-  declare status:          TenantStatus;
-  declare trial_starts_at: Date | null;
-  declare trial_ends_at:   Date | null;
-  declare db_name:         string | null;
+  declare id:               number;
+  declare cnpj:             string;
+  declare company_name:     string;
+  declare slug:             string;
+  declare segment:          TenantSegment;
+  declare city:             string;
+  declare phone:            string | null;
+  declare courts_count:     string;
+  declare plan:             TenantPlan;
+  declare status:           TenantStatus;
+  declare trial_starts_at:  Date | null;
+  declare trial_ends_at:    Date | null;
+  declare db_name:          string | null;
+  declare control_api_url:  string | null;
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
 }
@@ -121,6 +123,12 @@ Tenant.init(
       allowNull: true,
       defaultValue: null,
       comment: 'Tenant database name. Ex: core_tenant_7',
+    },
+    control_api_url: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      defaultValue: null,
+      comment: 'URL base da API do Control deste tenant. Ex: https://api.academia-exemplo.averafit.com.br',
     },
   },
   {

@@ -14,6 +14,7 @@ import {
 import generateAuthToken from '../core/token/generateAuthToken';
 import { acceptInviteToken } from './inviteController';
 import { sendEmail } from '../core/email/emailService';
+import { syncControlTenantConfig } from '../services/controlSyncService';
 
 const normalizeEmail = (e?: string) => String(e || '').trim().toLowerCase();
 const normalizeCnpj  = (c?: string) => String(c || '').replace(/\D/g, '');
@@ -259,6 +260,13 @@ export const register = async (req: Request, res: Response): Promise<Response> =
 
     // ── Reload tenant to get updated status (provisionService may have set pending_provision)
     const updatedTenant = await Tenant.findByPk(tenant.id);
+
+    // ── Sync config to Control backend (fire-and-forget) ─────────────────────
+    if (updatedTenant) {
+      syncControlTenantConfig(updatedTenant).catch((err) =>
+        console.error('[signup] controlSync error:', err?.message)
+      );
+    }
 
     // ── Notify Avera team about the new registration ──────────────────────────
     await sendNewTenantNotification({
