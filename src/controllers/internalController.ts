@@ -100,6 +100,50 @@ export const getTenantByEmail = async (req: Request, res: Response): Promise<Res
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// GET /api/public/tenant/:slug
+// Returns tenant config by slug — used by Core backend and frontend routing.
+// ─────────────────────────────────────────────────────────────────────────────
+export const getTenantBySlug = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { slug } = req.params;
+
+    const tenant = await Tenant.findOne({
+      where: { slug: String(slug).trim().toLowerCase() },
+      attributes: ['id', 'company_name', 'slug', 'plan', 'status', 'db_name', 'control_api_url', 'trial_ends_at'],
+    });
+
+    if (!tenant) {
+      return res.status(404).json({ success: false, error: 'Tenant not found' });
+    }
+
+    if (tenant.status !== 'active') {
+      return res.status(403).json({
+        success: false,
+        error:   `Tenant account is ${tenant.status}`,
+        status:  tenant.status,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      tenant: {
+        id:              tenant.id,
+        company_name:    tenant.company_name,
+        slug:            tenant.slug,
+        plan:            tenant.plan,
+        status:          tenant.status,
+        db_name:         tenant.db_name,
+        control_api_url: tenant.control_api_url,
+        trial_ends_at:   tenant.trial_ends_at,
+      },
+    });
+  } catch (error: any) {
+    console.error('[public/tenant/slug]', error);
+    return res.status(500).json({ success: false, error: 'Internal server error', detail: error?.message });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // POST /internal/seed-admin
 // Creates the first Avera admin user. Blocked if any admin already exists.
 // Protected by X-Internal-Secret — never exposed to end users.

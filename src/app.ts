@@ -10,6 +10,7 @@ import adminRoute    from './routes/adminRoutes';
 import planRoute     from './routes/planRoutes';
 import inviteRoute   from './routes/inviteRoutes';
 import { listPublicPlans } from './controllers/planController';
+import { getTenantBySlug } from './controllers/internalController';
 
 require('dotenv').config({ path: require('path').resolve(__dirname, '..', '.env') });
 
@@ -35,7 +36,8 @@ app.use('/internal',  internalRoute);  // backend-to-backend only
 app.use('/admin',     adminRoute);     // Avera admin panel
 app.use('/admin/plans',     planRoute);      // Plans CRUD
 app.use('/invites',         inviteRoute);    // Public invite token validation
-app.get('/plans',           listPublicPlans); // Public plans list for signup
+app.get('/plans',                        listPublicPlans);  // Public plans list for signup
+app.get('/api/public/tenant/:slug',      getTenantBySlug);  // Tenant lookup by slug
 
 // ─── 404 ─────────────────────────────────────────────────────────────────────
 app.use((_req: Request, res: Response) => {
