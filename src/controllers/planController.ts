@@ -3,6 +3,25 @@ import { Op } from 'sequelize';
 import Plan from '../models/Plan.model';
 
 // ─────────────────────────────────────────────────────────────────────────────
+// GET /plans
+// Retorna apenas os planos ativos — público, usado na página de signup
+// ─────────────────────────────────────────────────────────────────────────────
+export const listPublicPlans = async (_req: Request, res: Response): Promise<Response> => {
+  try {
+    const plans = await Plan.findAll({
+      where:      { status: 'active' },
+      attributes: ['id', 'name', 'price', 'trial_days', 'description'],
+      order:      [['price', 'ASC']],
+    });
+
+    return res.status(200).json({ success: true, data: plans });
+  } catch (error: any) {
+    console.error('[plans/public/list]', error);
+    return res.status(500).json({ success: false, error: 'Erro interno do servidor', detail: error?.message });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // GET /admin/plans
 // Lista todos os planos com paginação e filtro opcional por status
 // ─────────────────────────────────────────────────────────────────────────────
