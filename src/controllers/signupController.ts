@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import sequelize from '../config/database';
-import Tenant from '../models/Tenant.model';
+import Tenant, { TenantPlan } from '../models/Tenant.model';
 import User from '../models/User.model';
 import { provisionFeatures } from '../services/featureService';
 import { provisionTenantDatabase } from '../services/provisionService';
@@ -166,6 +166,7 @@ export const register = async (req: Request, res: Response): Promise<Response> =
 
     const normalizedEmail = normalizeEmail(email);
     const normalizedCnpj  = normalizeCnpj(cnpj);
+    const normalizedPlan  = String(plan).trim().toLowerCase();
 
     // ── Verificar email — OTP ou invite token ─────────────────────────────────
     if (invite_token) {
@@ -237,7 +238,7 @@ export const register = async (req: Request, res: Response): Promise<Response> =
         city,
         phone:           phone ? String(phone).trim() : null,
         courts_count,
-        plan,
+        plan:            normalizedPlan as TenantPlan,
         status:          'active',
         trial_starts_at: now,
         trial_ends_at:   trialEndsAt,
@@ -271,7 +272,7 @@ export const register = async (req: Request, res: Response): Promise<Response> =
     }
 
     // ── Provision features for this plan (outside transaction — safe to retry)
-    await provisionFeatures(tenant.id, plan);
+    await provisionFeatures(tenant.id, normalizedPlan as TenantPlan);
 
     // ── Provision tenant database (semi-automatic — alerts admin if it fails)
     await provisionTenantDatabase(tenant.id);
