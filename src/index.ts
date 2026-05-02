@@ -34,6 +34,11 @@ async function runMigrations(): Promise<void> {
     'nome',
     "VARCHAR(150) NULL DEFAULT NULL COMMENT 'Name of the invited person (optional)' AFTER `email`"
   );
+  await addColumnIfNotExists(
+    'tenants',
+    'control_api_url',
+    "VARCHAR(255) NULL DEFAULT NULL COMMENT 'URL base da API do Control deste tenant' AFTER `db_name`"
+  );
   console.log('[migration] Concluído ✓');
 }
 
