@@ -14,6 +14,7 @@ import {
 import generateAuthToken from '../core/token/generateAuthToken';
 import { acceptInviteToken } from './inviteController';
 import { sendEmail } from '../core/email/emailService';
+import Invite from '../models/Invite.model';
 import { syncControlTenantConfig } from '../services/controlSyncService';
 
 const normalizeEmail = (e?: string) => String(e || '').trim().toLowerCase();
@@ -166,14 +167,31 @@ export const register = async (req: Request, res: Response): Promise<Response> =
     const normalizedEmail = normalizeEmail(email);
     const normalizedCnpj  = normalizeCnpj(cnpj);
 
-    // ── Ensure email was verified ─────────────────────────────────────────────
-    const emailVerified = await isEmailVerified(normalizedEmail);
-    if (!emailVerified) {
-      await t.rollback();
-      return res.status(403).json({
-        success: false,
-        error: 'Email not verified. Go back to the verification step.',
+    // ── Verificar email — OTP ou invite token ─────────────────────────────────
+    if (invite_token) {
+      const invite = await Invite.findOne({
+        where: { token: String(invite_token), status: 'pending' },
       });
+
+      if (!invite || invite.email !== normalizedEmail) {
+        await t.rollback();
+        return res.status(403).json({ success: false, error: 'Invalid or expired invite token.' });
+      }
+
+      if (new Date() > invite.expires_at) {
+        await invite.update({ status: 'expired' });
+        await t.rollback();
+        return res.status(403).json({ success: false, error: 'Invite has expired. Request a new one.' });
+      }
+    } else {
+      const emailVerified = await isEmailVerified(normalizedEmail);
+      if (!emailVerified) {
+        await t.rollback();
+        return res.status(403).json({
+          success: false,
+          error: 'Email not verified. Go back to the verification step.',
+        });
+      }
     }
 
     // ── Check for duplicates ──────────────────────────────────────────────────
