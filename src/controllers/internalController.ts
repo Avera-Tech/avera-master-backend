@@ -1,7 +1,9 @@
 import { Request, Response } from 'express';
+import bcrypt from 'bcryptjs';
 import Tenant from '../models/Tenant.model';
 import User from '../models/User.model';
 import Feature from '../models/Feature.model';
+import AdminUser from '../models/AdminUser.model';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /internal/tenant/:email
@@ -93,6 +95,44 @@ export const getTenantByEmail = async (req: Request, res: Response): Promise<Res
     });
   } catch (error: any) {
     console.error('[internal/tenant]', error);
+    return res.status(500).json({ success: false, error: 'Internal server error', detail: error?.message });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /internal/seed-admin
+// Creates the first Avera admin user. Blocked if any admin already exists.
+// Protected by X-Internal-Secret — never exposed to end users.
+// ─────────────────────────────────────────────────────────────────────────────
+export const seedAdmin = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ success: false, error: 'name, email and password are required' });
+    }
+
+    const existing = await AdminUser.count();
+    if (existing > 0) {
+      return res.status(409).json({ success: false, error: 'Admin users already exist. Use the admin panel to add more.' });
+    }
+
+    const hash = await bcrypt.hash(String(password), 10);
+
+    const admin = await AdminUser.create({
+      name:     String(name).trim(),
+      email:    String(email).trim().toLowerCase(),
+      password: hash,
+      active:   true,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Admin user created successfully.',
+      user: { id: admin.id, name: admin.name, email: admin.email },
+    });
+  } catch (error: any) {
+    console.error('[internal/seed-admin]', error);
     return res.status(500).json({ success: false, error: 'Internal server error', detail: error?.message });
   }
 };

@@ -21,11 +21,7 @@ export const sendPendingOtp = async (email: string): Promise<void> => {
     console.log(`[OTP] Código de signup para ${normalizedEmail}: ${code}`);
   }
 
-  try {
-    await sendEmail({ to: normalizedEmail, subject: 'Verificação de e-mail — Avera', html: buildOtpEmail(code) });
-  } catch (err: any) {
-    console.warn(`[OTP] Falha ao enviar e-mail para ${normalizedEmail}:`, err?.message);
-  }
+  await sendEmail({ to: normalizedEmail, subject: 'Verificação de e-mail — Avera', html: buildOtpEmail(code) });
 };
 
 export const verifyPendingOtp = async (email: string, code: string): Promise<{ valid: boolean; error?: string }> => {

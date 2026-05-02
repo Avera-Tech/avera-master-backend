@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getTenantByEmail } from '../controllers/internalController';
+import { getTenantByEmail, seedAdmin } from '../controllers/internalController';
 import { internalAuth } from '../middleware/internalAuth';
 
 const router = Router();
@@ -14,6 +14,7 @@ const router = Router();
  *  - Get the db_name to connect to the right database
  *  - Get enabled features to include in the JWT
  */
-router.get('/tenant/:email', internalAuth, getTenantByEmail);
+router.get ('/tenant/:email', internalAuth, getTenantByEmail);
+router.post('/seed-admin',    seedAdmin);
 
 export default router;
