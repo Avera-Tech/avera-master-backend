@@ -28,6 +28,7 @@ interface TenantAttributes {
   trial_starts_at:  Date | null;
   trial_ends_at:    Date | null;
   db_name:          string | null;
+  control_api_key:  string | null;
   control_api_url:  string | null;
   createdAt?:       Date;
   updatedAt?:       Date;
@@ -35,7 +36,7 @@ interface TenantAttributes {
 
 type TenantCreationAttributes = Optional<
   TenantAttributes,
-  'id' | 'status' | 'phone' | 'trial_starts_at' | 'trial_ends_at' | 'db_name' | 'control_api_url'
+  'id' | 'status' | 'phone' | 'trial_starts_at' | 'trial_ends_at' | 'db_name' | 'control_api_key' | 'control_api_url'
 >;
 
 class Tenant
@@ -54,6 +55,7 @@ class Tenant
   declare trial_starts_at:  Date | null;
   declare trial_ends_at:    Date | null;
   declare db_name:          string | null;
+  declare control_api_key:  string | null;
   declare control_api_url:  string | null;
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
@@ -123,6 +125,12 @@ Tenant.init(
       allowNull: true,
       defaultValue: null,
       comment: 'Tenant database name. Ex: core_tenant_7',
+    },
+    control_api_key: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      defaultValue: null,
+      comment: 'API key para autenticação no Control deste tenant',
     },
     control_api_url: {
       type: DataTypes.STRING(255),

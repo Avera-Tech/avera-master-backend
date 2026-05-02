@@ -36,8 +36,13 @@ async function runMigrations(): Promise<void> {
   );
   await addColumnIfNotExists(
     'tenants',
+    'control_api_key',
+    "VARCHAR(255) NULL DEFAULT NULL COMMENT 'API key para autenticação no Control deste tenant' AFTER `db_name`"
+  );
+  await addColumnIfNotExists(
+    'tenants',
     'control_api_url',
-    "VARCHAR(255) NULL DEFAULT NULL COMMENT 'URL base da API do Control deste tenant' AFTER `db_name`"
+    "VARCHAR(255) NULL DEFAULT NULL COMMENT 'URL base da API do Control deste tenant' AFTER `control_api_key`"
   );
 
   // Converte tenants.plan de ENUM para VARCHAR — aceita qualquer nome de plano

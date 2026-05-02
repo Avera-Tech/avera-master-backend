@@ -173,6 +173,40 @@ export const updateTenantPlan = async (req: Request, res: Response): Promise<Res
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// PATCH /admin/tenants/:id/settings
+// Update db_name and/or control_api_key
+// ─────────────────────────────────────────────────────────────────────────────
+export const updateTenantSettings = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { id } = req.params;
+    const { db_name, control_api_key } = req.body;
+
+    const tenant = await Tenant.findByPk(id);
+    if (!tenant) {
+      return res.status(404).json({ success: false, error: 'Tenant not found' });
+    }
+
+    const updates: Partial<{ db_name: string | null; control_api_key: string | null }> = {};
+    if (db_name !== undefined)        updates.db_name        = db_name        || null;
+    if (control_api_key !== undefined) updates.control_api_key = control_api_key || null;
+
+    await tenant.update(updates);
+    syncControlTenantConfig(tenant).catch((err) =>
+      console.error('[admin/settings] controlSync error:', err?.message)
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Tenant settings updated',
+      data: { id: tenant.id, db_name: tenant.db_name, control_api_key: tenant.control_api_key },
+    });
+  } catch (error: any) {
+    console.error('[admin/tenants/settings]', error);
+    return res.status(500).json({ success: false, error: 'Internal server error', detail: error?.message });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // GET /admin/dashboard
 // Platform overview metrics
 // ─────────────────────────────────────────────────────────────────────────────
