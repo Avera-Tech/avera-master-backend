@@ -2,7 +2,7 @@ import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from '../config/database';
 
 export type TenantStatus  = 'pending' | 'active' | 'pending_provision' | 'suspended' | 'cancelled';
-export type TenantPlan    = 'starter' | 'professional' | 'enterprise';
+export type TenantPlan = string;
 export type TenantSegment =
   | 'Academia'
   | 'Centro Esportivo'
@@ -99,7 +99,7 @@ Tenant.init(
       allowNull: false,
     },
     plan: {
-      type: DataTypes.ENUM('starter', 'professional', 'enterprise'),
+      type: DataTypes.STRING(100),
       allowNull: false,
       defaultValue: 'starter',
     },

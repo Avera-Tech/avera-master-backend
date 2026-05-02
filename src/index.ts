@@ -39,6 +39,18 @@ async function runMigrations(): Promise<void> {
     'control_api_url',
     "VARCHAR(255) NULL DEFAULT NULL COMMENT 'URL base da API do Control deste tenant' AFTER `db_name`"
   );
+
+  // Converte tenants.plan de ENUM para VARCHAR — aceita qualquer nome de plano
+  try {
+    await sequelizeMaster.query(
+      "ALTER TABLE `tenants` MODIFY COLUMN `plan` VARCHAR(100) NOT NULL DEFAULT 'starter'",
+      { type: QueryTypes.RAW }
+    );
+    console.log('[migration] tenants.plan convertido para VARCHAR ✓');
+  } catch (err: any) {
+    if (err?.original?.errno !== 1060) console.warn('[migration] tenants.plan:', err?.original?.sqlMessage ?? err?.message);
+  }
+
   console.log('[migration] Concluído ✓');
 }
 

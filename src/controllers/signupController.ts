@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import sequelize from '../config/database';
 import Tenant, { TenantPlan } from '../models/Tenant.model';
+import Plan from '../models/Plan.model';
 import User from '../models/User.model';
 import { provisionFeatures } from '../services/featureService';
 import { provisionTenantDatabase } from '../services/provisionService';
@@ -139,7 +140,7 @@ export const register = async (req: Request, res: Response): Promise<Response> =
       city,
       phone,
       courts_count,
-      plan,
+      plan_id,
       name,
       email,
       invite_token,
@@ -152,7 +153,7 @@ export const register = async (req: Request, res: Response): Promise<Response> =
     if (!segment)      missing.push('segment');
     if (!city)         missing.push('city');
     if (!courts_count) missing.push('courts_count');
-    if (!plan)         missing.push('plan');
+    if (!plan_id)      missing.push('plan_id');
     if (!name)         missing.push('name');
     if (!email)        missing.push('email');
 
@@ -166,7 +167,14 @@ export const register = async (req: Request, res: Response): Promise<Response> =
 
     const normalizedEmail = normalizeEmail(email);
     const normalizedCnpj  = normalizeCnpj(cnpj);
-    const normalizedPlan  = String(plan).trim().toLowerCase();
+
+    // ── Buscar plano pelo ID ──────────────────────────────────────────────────
+    const selectedPlan = await Plan.findOne({ where: { id: plan_id, status: 'active' } });
+    if (!selectedPlan) {
+      await t.rollback();
+      return res.status(400).json({ success: false, error: 'Plano inválido ou inativo.' });
+    }
+    const normalizedPlan = selectedPlan.name;
 
     // ── Verificar email — OTP ou invite token ─────────────────────────────────
     if (invite_token) {
