@@ -49,6 +49,7 @@ jobs:
               echo 'EMAIL_USER=no-reply@averatech.com.br'
               echo 'EMAIL_PASS=${{ secrets.MASTER_EMAIL_PASS }}'
               echo 'EMAIL_FROM_NAME=Avera'
+              echo 'DB_PASSWORD_SECRET=${{ secrets.DB_PASSWORD_SECRET }}'
             } > .env
             npm install
             npm run build
