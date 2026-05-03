@@ -50,6 +50,7 @@ jobs:
               echo 'EMAIL_PASS=${{ secrets.MASTER_EMAIL_PASS }}'
               echo 'EMAIL_FROM_NAME=Avera'
               echo 'DB_PASSWORD_SECRET=${{ secrets.DB_PASSWORD_SECRET }}'
+              echo 'MASTER_ACCESS_SECRET=${{ secrets.MASTER_ACCESS_SECRET }}'
             } > .env
             npm install
             npm run build
