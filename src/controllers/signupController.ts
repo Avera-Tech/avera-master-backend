@@ -216,10 +216,10 @@ export const register = async (req: Request, res: Response): Promise<Response> =
       return res.status(409).json({ success: false, error: 'CNPJ already registered' });
     }
 
-    // ── Set trial period (14 days) ────────────────────────────────────────────
+    // ── Set trial period (from plan) ─────────────────────────────────────────
     const now         = new Date();
     const trialEndsAt = new Date(now);
-    trialEndsAt.setDate(trialEndsAt.getDate() + 14);
+    trialEndsAt.setDate(trialEndsAt.getDate() + selectedPlan.trial_days);
 
     // ── Generate slug and db_name ─────────────────────────────────────────────
     const slug   = slugify(company_name);
