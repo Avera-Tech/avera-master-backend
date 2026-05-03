@@ -6,6 +6,7 @@ import User from '../models/User.model';
 import Feature from '../models/Feature.model';
 import { provisionFeatures } from '../services/featureService';
 import { syncControlTenantConfig } from '../services/controlSyncService';
+import { generateMasterAccessToken } from '../core/token/generateMasterAccessToken';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /admin/tenants
@@ -170,6 +171,128 @@ export const updateTenantPlan = async (req: Request, res: Response): Promise<Res
   } catch (error: any) {
     console.error('[admin/tenants/plan]', error);
     return res.status(500).json({ success: false, error: 'Internal server error', detail: error?.message });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /admin/tenants/:id/master-access
+// Generates a short-lived token (10 min) for the admin to enter as a tenant.
+// The Control API verifies this token via the shared MASTER_ACCESS_SECRET.
+// ─────────────────────────────────────────────────────────────────────────────
+export const getMasterAccessToken = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { id } = req.params;
+
+    const tenant = await Tenant.findByPk(id, {
+      attributes: ['id', 'slug', 'company_name', 'status', 'control_api_url'],
+    });
+
+    if (!tenant) {
+      return res.status(404).json({ success: false, error: 'Tenant not found' });
+    }
+
+    if (tenant.status === 'suspended' || tenant.status === 'cancelled') {
+      return res.status(403).json({ success: false, error: `Tenant está ${tenant.status}` });
+    }
+
+    const token       = generateMasterAccessToken(tenant.slug, tenant.id);
+    const redirectUrl = `/${tenant.slug}/login?master_token=${token}`;
+
+    return res.status(200).json({ success: true, token, redirect_url: redirectUrl });
+  } catch (error: any) {
+    console.error('[admin/tenants/master-access]', error);
+    return res.status(500).json({ success: false, error: 'Internal server error', detail: error?.message });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /admin/tenants/:id/initialize
+// Runs the 3-step Control API seed sequence for a tenant:
+//   1. POST /api/seed/init/{slug}   → tables + roles + permissions
+//   2. POST /api/seed/levels        → default skill levels
+//   3. POST /api/seed/admin         → first tenant admin user
+// ─────────────────────────────────────────────────────────────────────────────
+export const initializeTenant = async (req: Request, res: Response): Promise<Response> => {
+  const { id } = req.params;
+  const { name, email, password } = req.body;
+
+  const tenant = await Tenant.findByPk(id);
+  if (!tenant) {
+    return res.status(404).json({ success: false, error: 'Tenant not found' });
+  }
+
+  const baseUrl = tenant.control_api_url;
+  if (!baseUrl) {
+    return res.status(422).json({ success: false, error: 'control_api_url não configurado para este tenant' });
+  }
+
+  const { slug } = tenant;
+  const steps: Record<string, unknown> = {};
+
+  try {
+    // ── Step 1: init tables + roles + permissions ─────────────────────────────
+    const r1 = await fetch(`${baseUrl}/api/seed/init/${slug}`, { method: 'POST' });
+    const b1 = await r1.json().catch(() => ({}));
+    steps.init = { status: r1.status, body: b1 };
+
+    if (!r1.ok) {
+      return res.status(502).json({
+        success: false,
+        error:   'Falha no passo 1 (init)',
+        steps,
+      });
+    }
+
+    // ── Step 2: create default levels ────────────────────────────────────────
+    const r2 = await fetch(`${baseUrl}/api/seed/levels`, {
+      method:  'POST',
+      headers: { 'X-Client-Id': slug },
+    });
+    const b2 = await r2.json().catch(() => ({}));
+    steps.levels = { status: r2.status, body: b2 };
+
+    if (!r2.ok) {
+      return res.status(502).json({
+        success: false,
+        error:   'Falha no passo 2 (levels)',
+        steps,
+      });
+    }
+
+    // ── Step 3: create first tenant admin ────────────────────────────────────
+    const adminBody: Record<string, string> = {};
+    if (name)     adminBody.name     = name;
+    if (email)    adminBody.email    = email;
+    if (password) adminBody.password = password;
+
+    const r3 = await fetch(`${baseUrl}/api/seed/admin`, {
+      method:  'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Client-Id':  slug,
+      },
+      body: JSON.stringify(adminBody),
+    });
+    const b3 = await r3.json().catch(() => ({}));
+    steps.admin = { status: r3.status, body: b3 };
+
+    if (!r3.ok) {
+      return res.status(502).json({
+        success: false,
+        error:   'Falha no passo 3 (admin)',
+        steps,
+      });
+    }
+
+    return res.status(200).json({ success: true, message: 'Tenant inicializado com sucesso', steps });
+  } catch (error: any) {
+    console.error('[admin/tenants/initialize]', error);
+    return res.status(502).json({
+      success: false,
+      error:   'Erro de rede ao contactar Control API',
+      detail:  error?.message,
+      steps,
+    });
   }
 };
 

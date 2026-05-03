@@ -15,6 +15,8 @@ import {
   updateTenantStatus,
   updateTenantPlan,
   updateTenantSettings,
+  initializeTenant,
+  getMasterAccessToken,
   getDashboard,
 } from '../controllers/adminController';
 import {
@@ -45,7 +47,9 @@ router.get   ('/tenants',            adminAuth, listTenants);
 router.get   ('/tenants/:id',        adminAuth, getTenant);
 router.patch ('/tenants/:id/status',   adminAuth, updateTenantStatus);
 router.patch ('/tenants/:id/plan',     adminAuth, updateTenantPlan);
-router.patch ('/tenants/:id/settings', adminAuth, updateTenantSettings);
+router.patch ('/tenants/:id/settings',    adminAuth, updateTenantSettings);
+router.post  ('/tenants/:id/initialize',    adminAuth, initializeTenant);
+router.post  ('/tenants/:id/master-access', adminAuth, getMasterAccessToken);
 
 // ─── Invites ──────────────────────────────────────────────────────────────────
 router.post  ('/invites',     adminAuth, createInvite);
