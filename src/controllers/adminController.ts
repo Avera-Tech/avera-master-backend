@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { Op } from 'sequelize';
+import { encrypt } from '../utils/crypto';
 import Tenant from '../models/Tenant.model';
 import User from '../models/User.model';
 import Feature from '../models/Feature.model';
@@ -174,21 +175,21 @@ export const updateTenantPlan = async (req: Request, res: Response): Promise<Res
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PATCH /admin/tenants/:id/settings
-// Update db_name and/or control_api_key
+// Update db_name and/or db_password
 // ─────────────────────────────────────────────────────────────────────────────
 export const updateTenantSettings = async (req: Request, res: Response): Promise<Response> => {
   try {
     const { id } = req.params;
-    const { db_name, control_api_key } = req.body;
+    const { db_name, db_password } = req.body;
 
     const tenant = await Tenant.findByPk(id);
     if (!tenant) {
       return res.status(404).json({ success: false, error: 'Tenant not found' });
     }
 
-    const updates: Partial<{ db_name: string | null; control_api_key: string | null }> = {};
+    const updates: Partial<{ db_name: string | null; db_password: string | null }> = {};
     if (db_name !== undefined)        updates.db_name        = db_name        || null;
-    if (control_api_key !== undefined) updates.control_api_key = control_api_key || null;
+    if (db_password !== undefined) updates.db_password = db_password ? encrypt(db_password) : null;
 
     await tenant.update(updates);
     syncControlTenantConfig(tenant).catch((err) =>
@@ -198,7 +199,7 @@ export const updateTenantSettings = async (req: Request, res: Response): Promise
     return res.status(200).json({
       success: true,
       message: 'Tenant settings updated',
-      data: { id: tenant.id, db_name: tenant.db_name, control_api_key: tenant.control_api_key },
+      data: { id: tenant.id, db_name: tenant.db_name, db_password: tenant.db_password },
     });
   } catch (error: any) {
     console.error('[admin/tenants/settings]', error);

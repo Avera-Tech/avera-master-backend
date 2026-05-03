@@ -3,6 +3,7 @@ import { Op } from 'sequelize';
 import Tenant from '../models/Tenant.model';
 import User   from '../models/User.model';
 import Feature from '../models/Feature.model';
+import { decrypt } from '../utils/crypto';
 
 // ─── Valores permitidos ───────────────────────────────────────────────────────
 
@@ -98,7 +99,7 @@ export const getTenant = async (req: Request, res: Response): Promise<Response> 
       attributes: [
         'id', 'company_name', 'cnpj', 'slug', 'segment', 'city',
         'phone', 'courts_count', 'plan', 'status',
-        'trial_starts_at', 'trial_ends_at', 'db_name', 'createdAt', 'updatedAt',
+        'trial_starts_at', 'trial_ends_at', 'db_name', 'db_password', 'createdAt', 'updatedAt',
       ],
     });
 
@@ -117,10 +118,16 @@ export const getTenant = async (req: Request, res: Response): Promise<Response> 
       order:      [['feature_name', 'ASC']],
     });
 
+    const tenantData = tenant.toJSON() as Record<string, unknown>;
+    if (tenantData.db_password) {
+      try { tenantData.db_password = decrypt(tenantData.db_password as string); }
+      catch { /* mantém o valor se falhar a descriptografia */ }
+    }
+
     return res.status(200).json({
       success: true,
       data: {
-        ...tenant.toJSON(),
+        ...tenantData,
         admin_user: adminUser,
         features,
       },
