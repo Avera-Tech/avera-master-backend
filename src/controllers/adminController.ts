@@ -298,21 +298,22 @@ export const initializeTenant = async (req: Request, res: Response): Promise<Res
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PATCH /admin/tenants/:id/settings
-// Update db_name and/or db_password
+// Update db_name, db_password and/or control_api_url
 // ─────────────────────────────────────────────────────────────────────────────
 export const updateTenantSettings = async (req: Request, res: Response): Promise<Response> => {
   try {
     const { id } = req.params;
-    const { db_name, db_password } = req.body;
+    const { db_name, db_password, control_api_url } = req.body;
 
     const tenant = await Tenant.findByPk(id);
     if (!tenant) {
       return res.status(404).json({ success: false, error: 'Tenant not found' });
     }
 
-    const updates: Partial<{ db_name: string | null; db_password: string | null }> = {};
-    if (db_name !== undefined)        updates.db_name        = db_name        || null;
-    if (db_password !== undefined) updates.db_password = db_password ? encrypt(db_password) : null;
+    const updates: Partial<{ db_name: string | null; db_password: string | null; control_api_url: string | null }> = {};
+    if (db_name !== undefined)         updates.db_name         = db_name         || null;
+    if (db_password !== undefined)     updates.db_password     = db_password ? encrypt(db_password) : null;
+    if (control_api_url !== undefined) updates.control_api_url = control_api_url || null;
 
     await tenant.update(updates);
     syncControlTenantConfig(tenant).catch((err) =>
@@ -322,7 +323,12 @@ export const updateTenantSettings = async (req: Request, res: Response): Promise
     return res.status(200).json({
       success: true,
       message: 'Tenant settings updated',
-      data: { id: tenant.id, db_name: tenant.db_name, db_password: tenant.db_password },
+      data: {
+        id:              tenant.id,
+        db_name:         tenant.db_name,
+        db_password:     tenant.db_password,
+        control_api_url: tenant.control_api_url,
+      },
     });
   } catch (error: any) {
     console.error('[admin/tenants/settings]', error);
