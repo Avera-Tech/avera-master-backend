@@ -99,7 +99,6 @@ Payment.init(
     tableName: 'payments',
     indexes: [
       { fields: ['tenant_id'] },
-      { fields: ['client_id'] },
       { fields: ['status'] },
       { fields: ['due_date'] },
     ],

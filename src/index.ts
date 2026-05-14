@@ -62,6 +62,18 @@ async function runMigrations(): Promise<void> {
     'INT UNSIGNED NULL DEFAULT NULL AFTER `tenant_id`'
   );
 
+  // Adiciona index em client_id após garantir que a coluna existe
+  try {
+    await sequelizeMaster.query(
+      'ALTER TABLE `payments` ADD INDEX `payments_client_id` (`client_id`)',
+      { type: QueryTypes.RAW }
+    );
+    console.log('[migration] payments index client_id adicionado ✓');
+  } catch (err: any) {
+    if (err?.original?.errno !== 1061) // 1061 = ER_DUP_KEYNAME (index já existe)
+      console.warn('[migration] payments index client_id:', err?.original?.sqlMessage ?? err?.message);
+  }
+
   // Make payments.tenant_id nullable to support external-client payments
   try {
     await sequelizeMaster.query(
