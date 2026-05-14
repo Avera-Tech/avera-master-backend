@@ -23,6 +23,7 @@ import {
   createInvite,
   listInvites,
   revokeInvite,
+  resendInvite,
 } from '../controllers/inviteController';
 import { adminAuth } from '../middleware/adminAuth';
 
@@ -52,8 +53,9 @@ router.post  ('/tenants/:id/initialize',    adminAuth, initializeTenant);
 router.post  ('/tenants/:id/master-access', adminAuth, getMasterAccessToken);
 
 // ─── Invites ──────────────────────────────────────────────────────────────────
-router.post  ('/invites',     adminAuth, createInvite);
-router.get   ('/invites',     adminAuth, listInvites);
-router.delete('/invites/:id', adminAuth, revokeInvite);
+router.post  ('/invites',            adminAuth, createInvite);
+router.get   ('/invites',            adminAuth, listInvites);
+router.post  ('/invites/:id/resend', adminAuth, resendInvite);
+router.delete('/invites/:id',        adminAuth, revokeInvite);
 
 export default router;

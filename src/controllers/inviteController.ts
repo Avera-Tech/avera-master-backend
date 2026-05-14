@@ -78,7 +78,7 @@ export const listInvites = async (req: Request, res: Response): Promise<Response
 
     const invites = await Invite.findAll({
       where,
-      attributes: ['id', 'email', 'status', 'expires_at', 'created_by', 'createdAt', 'updatedAt'],
+      attributes: ['id', 'email', 'nome', 'status', 'expires_at', 'created_by', 'createdAt', 'updatedAt'],
       order: [['createdAt', 'DESC']],
     });
 
@@ -116,6 +116,64 @@ export const revokeInvite = async (req: Request, res: Response): Promise<Respons
   } catch (error: any) {
     console.error('[invites/revoke]', error);
     return res.status(500).json({ success: false, error: 'Failed to revoke invite', detail: error?.message });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /admin/invites/:id/resend
+// Revoga o invite antigo e envia um novo para o mesmo e-mail.
+// ─────────────────────────────────────────────────────────────────────────────
+export const resendInvite = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const invite = await Invite.findByPk(req.params.id);
+
+    if (!invite) {
+      return res.status(404).json({ success: false, error: 'Invite not found' });
+    }
+
+    if (invite.status === 'accepted') {
+      return res.status(409).json({ success: false, error: 'Este convite já foi aceito' });
+    }
+
+    // Revoga o convite atual
+    await invite.update({ status: 'revoked' });
+
+    // Cria novo token e expiry
+    const token     = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + INVITE_EXPIRY_HOURS);
+
+    const newInvite = await Invite.create({
+      email:      invite.email,
+      nome:       invite.nome,
+      token,
+      status:     'pending',
+      expires_at: expiresAt,
+      created_by: req.user?.id ?? invite.created_by,
+    });
+
+    const signupUrl = `https://averafit.app/signup?token=${token}`;
+    await sendInviteEmail({
+      email:         invite.email,
+      nomeConvidado: invite.nome,
+      nomeRemetente: 'Equipe Avera',
+      signupUrl,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: `Convite reenviado para ${invite.email}`,
+      invite: {
+        id:         newInvite.id,
+        email:      newInvite.email,
+        nome:       newInvite.nome,
+        status:     newInvite.status,
+        expires_at: newInvite.expires_at,
+      },
+    });
+  } catch (error: any) {
+    console.error('[invites/resend]', error);
+    return res.status(500).json({ success: false, error: 'Failed to resend invite', detail: error?.message });
   }
 };
 
