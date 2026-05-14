@@ -2,21 +2,24 @@ import { Request, Response } from 'express';
 import { Op } from 'sequelize';
 import Payment, { PaymentStatus } from '../models/Payment.model';
 import Tenant from '../models/Tenant.model';
+import Client from '../models/Client.model';
 import Plan from '../models/Plan.model';
 import { createPaymentLink } from '../services/cieloService';
 
+const TENANT_INCLUDE = { model: Tenant, as: 'tenant', attributes: ['id', 'company_name', 'slug'] };
+const CLIENT_INCLUDE = { model: Client, as: 'client', attributes: ['id', 'name', 'company'] };
+
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /admin/payments
-// Lista cobranças com filtros opcionais: status, tenant_id, search, page, limit
 // ─────────────────────────────────────────────────────────────────────────────
 export const listPayments = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const { status, tenant_id, search, page = 1, limit = 20 } = req.query;
+    const { status, tenant_id, client_id, search, page = 1, limit = 20 } = req.query;
 
     const where: any = {};
-
     if (status)    where.status    = status;
     if (tenant_id) where.tenant_id = Number(tenant_id);
+    if (client_id) where.client_id = Number(client_id);
 
     if (search) {
       where.description = { [Op.like]: `%${search}%` };
@@ -26,7 +29,7 @@ export const listPayments = async (req: Request, res: Response): Promise<Respons
 
     const { rows: payments, count: total } = await Payment.findAndCountAll({
       where,
-      include: [{ model: Tenant, as: 'tenant', attributes: ['id', 'company_name', 'slug'] }],
+      include: [TENANT_INCLUDE, CLIENT_INCLUDE],
       order:   [['due_date', 'DESC']],
       limit:   Number(limit),
       offset,
@@ -49,7 +52,10 @@ export const listPayments = async (req: Request, res: Response): Promise<Respons
 export const getPayment = async (req: Request, res: Response): Promise<Response> => {
   try {
     const payment = await Payment.findByPk(req.params.id, {
-      include: [{ model: Tenant, as: 'tenant', attributes: ['id', 'company_name', 'slug', 'plan'] }],
+      include: [
+        { model: Tenant, as: 'tenant', attributes: ['id', 'company_name', 'slug', 'plan'] },
+        CLIENT_INCLUDE,
+      ],
     });
 
     if (!payment) {
@@ -65,35 +71,43 @@ export const getPayment = async (req: Request, res: Response): Promise<Response>
 
 // ─────────────────────────────────────────────────────────────────────────────
 // POST /admin/payments
-// Cria uma cobrança para um tenant.
-// Se plan_id for informado, usa o valor do plano automaticamente.
+// Aceita tenant_id (Avera) ou client_id (cliente externo). Um dos dois é obrigatório.
 // ─────────────────────────────────────────────────────────────────────────────
 export const createPayment = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const { tenant_id, amount, description, due_date, plan_id } = req.body;
+    const { tenant_id, client_id, amount, description, due_date, plan_id } = req.body;
 
-    if (!tenant_id) {
-      return res.status(400).json({ success: false, error: 'tenant_id é obrigatório' });
+    if (!tenant_id && !client_id) {
+      return res.status(400).json({ success: false, error: 'tenant_id ou client_id é obrigatório' });
     }
     if (!due_date) {
       return res.status(400).json({ success: false, error: 'due_date é obrigatório' });
     }
 
-    const tenant = await Tenant.findByPk(tenant_id);
-    if (!tenant) {
-      return res.status(404).json({ success: false, error: 'Tenant não encontrado' });
+    let finalAmount = Number(amount) || 0;
+    let finalDesc   = description ?? null;
+
+    if (tenant_id) {
+      const tenant = await Tenant.findByPk(tenant_id);
+      if (!tenant) {
+        return res.status(404).json({ success: false, error: 'Tenant não encontrado' });
+      }
+
+      if (plan_id) {
+        const plan = await Plan.findByPk(plan_id);
+        if (!plan) {
+          return res.status(404).json({ success: false, error: 'Plano não encontrado' });
+        }
+        if (!finalAmount) finalAmount = Number(plan.price);
+        if (!finalDesc)   finalDesc   = `Mensalidade — ${plan.name}`;
+      }
     }
 
-    let finalAmount  = Number(amount);
-    let finalDesc    = description ?? null;
-
-    if (plan_id) {
-      const plan = await Plan.findByPk(plan_id);
-      if (!plan) {
-        return res.status(404).json({ success: false, error: 'Plano não encontrado' });
+    if (client_id) {
+      const client = await Client.findByPk(client_id);
+      if (!client) {
+        return res.status(404).json({ success: false, error: 'Cliente não encontrado' });
       }
-      if (!finalAmount)  finalAmount = Number(plan.price);
-      if (!finalDesc)    finalDesc   = `Mensalidade — ${plan.name}`;
     }
 
     if (!finalAmount || finalAmount <= 0) {
@@ -101,14 +115,14 @@ export const createPayment = async (req: Request, res: Response): Promise<Respon
     }
 
     const payment = await Payment.create({
-      tenant_id: Number(tenant_id),
+      tenant_id: tenant_id ? Number(tenant_id) : null,
+      client_id: client_id ? Number(client_id) : null,
       amount:    finalAmount,
       due_date:  new Date(due_date),
       status:    'pending',
       description: finalDesc,
     });
 
-    // Gera link de pagamento (stub — retorna null até Cielo ser configurado)
     const paymentLink = await createPaymentLink(payment);
 
     return res.status(201).json({
@@ -124,7 +138,6 @@ export const createPayment = async (req: Request, res: Response): Promise<Respon
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PATCH /admin/payments/:id/status
-// Atualiza o status de uma cobrança (pago, cancelado, etc.)
 // ─────────────────────────────────────────────────────────────────────────────
 export const updatePaymentStatus = async (req: Request, res: Response): Promise<Response> => {
   try {
@@ -161,7 +174,6 @@ export const updatePaymentStatus = async (req: Request, res: Response): Promise<
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DELETE /admin/payments/:id
-// Cancela uma cobrança (soft delete — só muda status para cancelled)
 // ─────────────────────────────────────────────────────────────────────────────
 export const cancelPayment = async (req: Request, res: Response): Promise<Response> => {
   try {
@@ -186,7 +198,6 @@ export const cancelPayment = async (req: Request, res: Response): Promise<Respon
 
 // ─────────────────────────────────────────────────────────────────────────────
 // POST /admin/payments/:id/payment-link
-// Gera (ou regera) o link de pagamento via Cielo
 // ─────────────────────────────────────────────────────────────────────────────
 export const generatePaymentLink = async (req: Request, res: Response): Promise<Response> => {
   try {

@@ -56,6 +56,23 @@ async function runMigrations(): Promise<void> {
     if (err?.original?.errno !== 1060) console.warn('[migration] tenants.plan:', err?.original?.sqlMessage ?? err?.message);
   }
 
+  await addColumnIfNotExists(
+    'payments',
+    'client_id',
+    'INT UNSIGNED NULL DEFAULT NULL AFTER `tenant_id`'
+  );
+
+  // Make payments.tenant_id nullable to support external-client payments
+  try {
+    await sequelizeMaster.query(
+      'ALTER TABLE `payments` MODIFY COLUMN `tenant_id` INT UNSIGNED NULL DEFAULT NULL',
+      { type: QueryTypes.RAW }
+    );
+    console.log('[migration] payments.tenant_id → nullable ✓');
+  } catch (err: any) {
+    console.warn('[migration] payments.tenant_id:', err?.original?.sqlMessage ?? err?.message);
+  }
+
   console.log('[migration] Concluído ✓');
 }
 

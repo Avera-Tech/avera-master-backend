@@ -1,13 +1,15 @@
 import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from '../config/database';
 import Tenant from './Tenant.model';
+import Client from './Client.model';
 
 export type PaymentStatus = 'pending' | 'paid' | 'overdue' | 'cancelled' | 'refunded';
 export type PaymentMethod = 'credit_card' | 'debit_card' | 'pix' | 'bank_slip' | 'bank_transfer';
 
 interface PaymentAttributes {
   id:             number;
-  tenant_id:      number;
+  tenant_id:      number | null;
+  client_id:      number | null;
   paid_at:        Date | null;
   due_date:       Date;
   amount:         number;
@@ -21,14 +23,15 @@ interface PaymentAttributes {
 
 type PaymentCreationAttributes = Optional<
   PaymentAttributes,
-  'id' | 'paid_at' | 'payment_method' | 'gateway_id' | 'description'
+  'id' | 'tenant_id' | 'client_id' | 'paid_at' | 'payment_method' | 'gateway_id' | 'description'
 >;
 
 class Payment
   extends Model<PaymentAttributes, PaymentCreationAttributes>
   implements PaymentAttributes {
   declare id:             number;
-  declare tenant_id:      number;
+  declare tenant_id:      number | null;
+  declare client_id:      number | null;
   declare paid_at:        Date | null;
   declare due_date:       Date;
   declare amount:         number;
@@ -49,9 +52,13 @@ Payment.init(
     },
     tenant_id: {
       type: DataTypes.INTEGER.UNSIGNED,
-      allowNull: false,
-      references: { model: 'tenants', key: 'id' },
-      onDelete: 'CASCADE',
+      allowNull: true,
+      defaultValue: null,
+    },
+    client_id: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: true,
+      defaultValue: null,
     },
     paid_at: {
       type: DataTypes.DATE,
@@ -80,7 +87,6 @@ Payment.init(
       type: DataTypes.STRING(100),
       allowNull: true,
       defaultValue: null,
-      comment: 'Transaction ID from payment gateway (Asaas, Pagar.me, etc.)',
     },
     description: {
       type: DataTypes.STRING(200),
@@ -93,6 +99,7 @@ Payment.init(
     tableName: 'payments',
     indexes: [
       { fields: ['tenant_id'] },
+      { fields: ['client_id'] },
       { fields: ['status'] },
       { fields: ['due_date'] },
     ],
@@ -100,6 +107,8 @@ Payment.init(
 );
 
 Payment.belongsTo(Tenant, { foreignKey: 'tenant_id', as: 'tenant' });
-Tenant.hasMany(Payment,  { foreignKey: 'tenant_id', as: 'payments' });
+Tenant.hasMany(Payment,   { foreignKey: 'tenant_id', as: 'payments' });
+Payment.belongsTo(Client, { foreignKey: 'client_id', as: 'client' });
+Client.hasMany(Payment,   { foreignKey: 'client_id', as: 'payments' });
 
 export default Payment;

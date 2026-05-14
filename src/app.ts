@@ -10,6 +10,7 @@ import adminRoute    from './routes/adminRoutes';
 import planRoute     from './routes/planRoutes';
 import inviteRoute   from './routes/inviteRoutes';
 import paymentRoute  from './routes/paymentRoutes';
+import clientRoute   from './routes/clientRoutes';
 import { listPublicPlans } from './controllers/planController';
 import { getTenantBySlug } from './controllers/internalController';
 
@@ -37,6 +38,7 @@ app.use('/internal',  internalRoute);  // backend-to-backend only
 app.use('/admin',     adminRoute);     // Avera admin panel
 app.use('/admin/plans',     planRoute);      // Plans CRUD
 app.use('/admin/payments',  paymentRoute);   // Payments / billing
+app.use('/admin/clients',   clientRoute);    // External clients
 app.use('/invites',         inviteRoute);    // Public invite token validation
 app.get('/plans',                        listPublicPlans);  // Public plans list for signup
 app.get('/api/public/tenant/:slug',      getTenantBySlug);  // Tenant lookup by slug
