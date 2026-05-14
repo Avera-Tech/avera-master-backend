@@ -44,7 +44,7 @@ export const createInvite = async (req: Request, res: Response): Promise<Respons
     });
 
     // ── Send invite email ────────────────────────────────────────────────────
-    const signupUrl = `${process.env.FRONTEND_URL}/signup?token=${token}`;
+    const signupUrl = `https://averafit.app/signup?token=${token}`;
     await sendInviteEmail({ email: normalizedEmail, nomeConvidado, nomeRemetente: nomeSender, signupUrl });
 
     return res.status(201).json({
@@ -229,7 +229,7 @@ const sendInviteEmail = async ({
           <tr>
             <td align="center" style="background-color:#317a52;padding:24px 32px;">
               <img
-                src="https://averatech.com.br/assets/avera-logo-white-fFM6UW1P.svg"
+                src="https://averafit.app/assets/avera-logo-white-fFM6UW1P.svg"
                 alt="Avera"
                 width="120"
                 style="display:block;height:auto;border:0;"

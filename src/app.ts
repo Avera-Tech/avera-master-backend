@@ -24,6 +24,7 @@ const corsOptions = {
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Internal-Secret'],
 };
+app.options('*', cors(corsOptions)); // preflight explícito para todas as rotas
 app.use(cors(corsOptions));
 
 // ─── BODY PARSER ─────────────────────────────────────────────────────────────
