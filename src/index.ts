@@ -85,6 +85,27 @@ async function runMigrations(): Promise<void> {
     console.warn('[migration] payments.tenant_id:', err?.original?.sqlMessage ?? err?.message);
   }
 
+  // Remove users e features cujo tenant foi deletado (órfãos de deletes antigos)
+  try {
+    const [usersResult] = await sequelizeMaster.query(
+      'DELETE FROM `users` WHERE `tenant_id` IS NOT NULL AND `tenant_id` NOT IN (SELECT `id` FROM `tenants`)',
+      { type: QueryTypes.RAW }
+    );
+    const affected = (usersResult as any)?.affectedRows ?? 0;
+    if (affected > 0) console.log(`[migration] ${affected} user(s) órfão(s) removido(s) ✓`);
+  } catch (err: any) {
+    console.warn('[migration] cleanup orphan users:', err?.original?.sqlMessage ?? err?.message);
+  }
+
+  try {
+    await sequelizeMaster.query(
+      'DELETE FROM `features` WHERE `tenant_id` IS NOT NULL AND `tenant_id` NOT IN (SELECT `id` FROM `tenants`)',
+      { type: QueryTypes.RAW }
+    );
+  } catch (err: any) {
+    console.warn('[migration] cleanup orphan features:', err?.original?.sqlMessage ?? err?.message);
+  }
+
   console.log('[migration] Concluído ✓');
 }
 
