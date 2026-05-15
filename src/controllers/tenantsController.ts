@@ -49,11 +49,12 @@ export const listTenants = async (req: Request, res: Response): Promise<Response
     if (plan)   where.plan   = plan;
     if (status) where.status = status;
 
-    if (search) {
+    if (typeof search === 'string' && search) {
+      const s = search;
       where[Op.or] = [
-        { company_name: { [Op.like]: `%${search}%` } },
-        { cnpj:         { [Op.like]: `%${search}%` } },
-        { city:         { [Op.like]: `%${search}%` } },
+        { company_name: { [Op.like]: `%${s}%` } },
+        { cnpj:         { [Op.like]: `%${s}%` } },
+        { city:         { [Op.like]: `%${s}%` } },
       ];
     }
 
@@ -99,6 +100,9 @@ export const deleteTenant = async (req: Request, res: Response): Promise<Respons
       return res.status(404).json({ success: false, error: 'Tenant não encontrado' });
     }
 
+    // Apaga usuários e features associados antes de remover o tenant
+    await User.destroy({ where: { tenant_id: tenant.id } });
+    await Feature.destroy({ where: { tenant_id: tenant.id } });
     await tenant.destroy();
 
     return res.json({ success: true, message: 'Cliente removido com sucesso.' });

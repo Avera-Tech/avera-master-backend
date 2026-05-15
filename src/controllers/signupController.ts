@@ -31,24 +31,24 @@ export const sendOtp = async (req: Request, res: Response): Promise<Response> =>
     const { email, company_name } = req.body;
 
     if (!email) {
-      return res.status(400).json({ success: false, error: 'Email is required' });
+      return res.status(400).json({ success: false, error: 'O e-mail é obrigatório.' });
     }
 
     if (!company_name) {
-      return res.status(400).json({ success: false, error: 'Company name is required' });
+      return res.status(400).json({ success: false, error: 'O nome da empresa é obrigatório.' });
     }
 
     const normalizedEmail = normalizeEmail(email);
     const slug = slugify(company_name);
 
     if (!slug) {
-      return res.status(400).json({ success: false, error: 'Invalid company name. Please use letters and numbers only.' });
+      return res.status(400).json({ success: false, error: 'Nome de empresa inválido. Use apenas letras e números.' });
     }
 
     // ── Check email duplicate ─────────────────────────────────────────────────
     const existingUser = await User.findOne({ where: { email: normalizedEmail } });
     if (existingUser) {
-      return res.status(409).json({ success: false, error: 'Email already registered. Try logging in.' });
+      return res.status(409).json({ success: false, error: 'E-mail já cadastrado. Tente fazer login.' });
     }
 
     // ── Check slug duplicate — early conflict detection ───────────────────────
@@ -56,7 +56,7 @@ export const sendOtp = async (req: Request, res: Response): Promise<Response> =>
     if (existingSlug) {
       return res.status(409).json({
         success: false,
-        error: `The name "${company_name}" is already taken. Please choose a different company name.`,
+        error: `O nome "${company_name}" já está em uso. Escolha um nome diferente para sua empresa.`,
         field: 'company_name',
         slug,
       });
@@ -66,13 +66,13 @@ export const sendOtp = async (req: Request, res: Response): Promise<Response> =>
 
     return res.status(200).json({
       success: true,
-      message: 'Verification code sent to your email.',
+      message: 'Código de verificação enviado para o seu e-mail.',
       slug,
       url_preview: `app.averafit.com.br/${slug}`,
     });
   } catch (error: any) {
     console.error('[signup/send-otp]', error);
-    return res.status(500).json({ success: false, error: 'Failed to send code', detail: error?.message });
+    return res.status(500).json({ success: false, error: 'Falha ao enviar o código. Tente novamente.', detail: error?.message });
   }
 };
 
@@ -84,7 +84,7 @@ export const verifyEmail = async (req: Request, res: Response): Promise<Response
   try {
     const { email, code } = req.body;
     if (!email || !code) {
-      return res.status(400).json({ success: false, error: 'Email and code are required' });
+      return res.status(400).json({ success: false, error: 'E-mail e código são obrigatórios.' });
     }
 
     const result = await verifyPendingOtp(normalizeEmail(email), String(code));
@@ -95,11 +95,11 @@ export const verifyEmail = async (req: Request, res: Response): Promise<Response
 
     return res.status(200).json({
       success: true,
-      message: 'Email verified successfully. Continue with registration.',
+      message: 'E-mail verificado com sucesso. Continue com o cadastro.',
     });
   } catch (error: any) {
     console.error('[signup/verify-email]', error);
-    return res.status(500).json({ success: false, error: 'Failed to verify code', detail: error?.message });
+    return res.status(500).json({ success: false, error: 'Falha ao verificar o código. Tente novamente.', detail: error?.message });
   }
 };
 
@@ -111,15 +111,15 @@ export const resendOtp = async (req: Request, res: Response): Promise<Response> 
   try {
     const { email } = req.body;
     if (!email) {
-      return res.status(400).json({ success: false, error: 'Email is required' });
+      return res.status(400).json({ success: false, error: 'O e-mail é obrigatório.' });
     }
 
     await sendPendingOtp(normalizeEmail(email));
 
-    return res.status(200).json({ success: true, message: 'New code sent to your email.' });
+    return res.status(200).json({ success: true, message: 'Novo código enviado para o seu e-mail.' });
   } catch (error: any) {
     console.error('[signup/resend-otp]', error);
-    return res.status(500).json({ success: false, error: 'Failed to resend code', detail: error?.message });
+    return res.status(500).json({ success: false, error: 'Falha ao reenviar o código. Tente novamente.', detail: error?.message });
   }
 };
 
@@ -161,7 +161,7 @@ export const register = async (req: Request, res: Response): Promise<Response> =
       await t.rollback();
       return res.status(400).json({
         success: false,
-        error: `Missing required fields: ${missing.join(', ')}`,
+        error: `Campos obrigatórios não preenchidos: ${missing.join(', ')}`,
       });
     }
 
@@ -184,13 +184,13 @@ export const register = async (req: Request, res: Response): Promise<Response> =
 
       if (!invite || invite.email !== normalizedEmail) {
         await t.rollback();
-        return res.status(403).json({ success: false, error: 'Invalid or expired invite token.' });
+        return res.status(403).json({ success: false, error: 'Convite inválido ou expirado.' });
       }
 
       if (new Date() > invite.expires_at) {
         await invite.update({ status: 'expired' });
         await t.rollback();
-        return res.status(403).json({ success: false, error: 'Invite has expired. Request a new one.' });
+        return res.status(403).json({ success: false, error: 'O convite expirou. Solicite um novo.' });
       }
     } else {
       const emailVerified = await isEmailVerified(normalizedEmail);
@@ -198,7 +198,7 @@ export const register = async (req: Request, res: Response): Promise<Response> =
         await t.rollback();
         return res.status(403).json({
           success: false,
-          error: 'Email not verified. Go back to the verification step.',
+          error: 'E-mail não verificado. Volte à etapa de verificação.',
         });
       }
     }
@@ -207,13 +207,13 @@ export const register = async (req: Request, res: Response): Promise<Response> =
     const existingUser = await User.findOne({ where: { email: normalizedEmail } });
     if (existingUser) {
       await t.rollback();
-      return res.status(409).json({ success: false, error: 'Email already registered' });
+      return res.status(409).json({ success: false, error: 'E-mail já cadastrado.' });
     }
 
     const existingTenant = await Tenant.findOne({ where: { cnpj: normalizedCnpj } });
     if (existingTenant) {
       await t.rollback();
-      return res.status(409).json({ success: false, error: 'CNPJ already registered' });
+      return res.status(409).json({ success: false, error: 'CNPJ já cadastrado.' });
     }
 
     // ── Set trial period (from plan) ─────────────────────────────────────────
@@ -231,7 +231,7 @@ export const register = async (req: Request, res: Response): Promise<Response> =
       await t.rollback();
       return res.status(409).json({
         success: false,
-        error: `The name "${company_name}" was just taken. Please choose a different company name.`,
+        error: `O nome "${company_name}" acabou de ser utilizado. Escolha um nome diferente para sua empresa.`,
         field: 'company_name',
       });
     }
@@ -318,7 +318,7 @@ export const register = async (req: Request, res: Response): Promise<Response> =
 
     return res.status(201).json({
       success: true,
-      message: 'Registration completed successfully!',
+      message: 'Cadastro realizado com sucesso!',
       token,
       user: {
         id:       user.id,
@@ -341,7 +341,7 @@ export const register = async (req: Request, res: Response): Promise<Response> =
   } catch (error: any) {
     if (!committed) await t.rollback();
     console.error('[signup/register]', error);
-    return res.status(500).json({ success: false, error: 'Registration failed', detail: error?.message });
+    return res.status(500).json({ success: false, error: 'Falha no cadastro. Tente novamente.', detail: error?.message });
   }
 };
 
