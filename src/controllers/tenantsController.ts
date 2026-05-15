@@ -87,6 +87,28 @@ export const listTenants = async (req: Request, res: Response): Promise<Response
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// DELETE /admin/tenants/:id
+// Remove um tenant e seus dados associados (users, features)
+// ─────────────────────────────────────────────────────────────────────────────
+export const deleteTenant = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { id } = req.params;
+
+    const tenant = await Tenant.findByPk(id);
+    if (!tenant) {
+      return res.status(404).json({ success: false, error: 'Tenant não encontrado' });
+    }
+
+    await tenant.destroy();
+
+    return res.json({ success: true, message: 'Cliente removido com sucesso.' });
+  } catch (error: any) {
+    console.error('[admin/tenants/delete]', error);
+    return res.status(500).json({ success: false, error: 'Erro interno do servidor', detail: error?.message });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // GET /admin/tenants/:id
 // Retorna os dados completos de um tenant: cnpj, segment, city,
 // courts_count, plan, status + usuário admin + features habilitadas

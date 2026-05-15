@@ -10,6 +10,7 @@ import {
 import {
   listTenants,
   getTenant,
+  deleteTenant,
 } from '../controllers/tenantsController';
 import {
   updateTenantStatus,
@@ -51,6 +52,7 @@ router.patch ('/tenants/:id/plan',     adminAuth, updateTenantPlan);
 router.patch ('/tenants/:id/settings',    adminAuth, updateTenantSettings);
 router.post  ('/tenants/:id/initialize',    adminAuth, initializeTenant);
 router.post  ('/tenants/:id/master-access', adminAuth, getMasterAccessToken);
+router.delete('/tenants/:id',               adminAuth, deleteTenant);
 
 // ─── Invites ──────────────────────────────────────────────────────────────────
 router.post  ('/invites',            adminAuth, createInvite);
