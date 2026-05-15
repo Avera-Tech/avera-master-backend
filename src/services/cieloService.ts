@@ -1,26 +1,28 @@
 import Payment from '../models/Payment.model';
 import Tenant from '../models/Tenant.model';
 import Plan from '../models/Plan.model';
+import { getSetting } from '../controllers/settingsController';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Cielo Service — stub
-//
-// Todas as funções retornam null/false até que as credenciais sejam configuradas.
-// Quando disponíveis, preencher CIELO_MERCHANT_ID e CIELO_MERCHANT_KEY no .env
-// e substituir os stubs pelas chamadas reais da Cielo API 3.0.
-//
+// Credenciais lidas do banco (tabela settings) com fallback para .env
 // Docs: https://developercielo.github.io/manual/cielo-ecommerce
 // ─────────────────────────────────────────────────────────────────────────────
 
-const MERCHANT_ID  = process.env.CIELO_MERCHANT_ID;
-const MERCHANT_KEY = process.env.CIELO_MERCHANT_KEY;
-const SANDBOX      = process.env.CIELO_SANDBOX !== 'false';
+const getCieloConfig = async () => {
+  const merchantId  = (await getSetting('cielo_merchant_id'))  ?? process.env.CIELO_MERCHANT_ID  ?? null;
+  const merchantKey = (await getSetting('cielo_merchant_key')) ?? process.env.CIELO_MERCHANT_KEY ?? null;
+  const sandbox     = (await getSetting('cielo_sandbox')) === 'false' ? false : true;
+  const baseUrl     = sandbox
+    ? 'https://apisandbox.cieloecommerce.cielo.com.br'
+    : 'https://api.cieloecommerce.cielo.com.br';
+  return { merchantId, merchantKey, sandbox, baseUrl };
+};
 
-const BASE_URL = SANDBOX
-  ? 'https://apisandbox.cieloecommerce.cielo.com.br'
-  : 'https://api.cieloecommerce.cielo.com.br';
-
-const isConfigured = (): boolean => !!(MERCHANT_ID && MERCHANT_KEY);
+const isConfigured = async (): Promise<boolean> => {
+  const { merchantId, merchantKey } = await getCieloConfig();
+  return !!(merchantId && merchantKey);
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // createPaymentLink
@@ -28,7 +30,7 @@ const isConfigured = (): boolean => !!(MERCHANT_ID && MERCHANT_KEY);
 // Retorna a URL ou null se a Cielo não estiver configurada.
 // ─────────────────────────────────────────────────────────────────────────────
 export const createPaymentLink = async (payment: Payment): Promise<string | null> => {
-  if (!isConfigured()) {
+  if (!(await isConfigured())) {
     console.warn('[cielo] CIELO_MERCHANT_ID/KEY não configurados — link de pagamento indisponível');
     return null;
   }
@@ -58,7 +60,7 @@ export const createRecurrentSubscription = async (
   _plan:   Plan,
   _cardToken: string,
 ): Promise<string | null> => {
-  if (!isConfigured()) {
+  if (!(await isConfigured())) {
     console.warn('[cielo] Credenciais não configuradas — recorrência indisponível');
     return null;
   }
@@ -76,7 +78,7 @@ export const createRecurrentSubscription = async (
 // Cancela uma assinatura recorrente ativa na Cielo.
 // ─────────────────────────────────────────────────────────────────────────────
 export const cancelSubscription = async (recurrentPaymentId: string): Promise<boolean> => {
-  if (!isConfigured()) return false;
+  if (!(await isConfigured())) return false;
 
   // TODO: PUT ${BASE_URL}/1/RecurrentPayment/${recurrentPaymentId}/Deactivate
 
