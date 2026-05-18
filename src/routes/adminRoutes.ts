@@ -11,6 +11,7 @@ import {
   listTenants,
   getTenant,
   deleteTenant,
+  notifyTenantReady,
 } from '../controllers/tenantsController';
 import {
   updateTenantStatus,
@@ -51,7 +52,8 @@ router.patch ('/tenants/:id/status',   adminAuth, updateTenantStatus);
 router.patch ('/tenants/:id/plan',     adminAuth, updateTenantPlan);
 router.patch ('/tenants/:id/settings',    adminAuth, updateTenantSettings);
 router.post  ('/tenants/:id/initialize',    adminAuth, initializeTenant);
-router.post  ('/tenants/:id/master-access', adminAuth, getMasterAccessToken);
+router.post  ('/tenants/:id/master-access',  adminAuth, getMasterAccessToken);
+router.post  ('/tenants/:id/notify-ready',  adminAuth, notifyTenantReady);
 router.delete('/tenants/:id',               adminAuth, deleteTenant);
 
 // ─── Invites ──────────────────────────────────────────────────────────────────
