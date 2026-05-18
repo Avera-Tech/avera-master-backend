@@ -184,7 +184,7 @@ export const getMasterAccessToken = async (req: Request, res: Response): Promise
     const { id } = req.params;
 
     const tenant = await Tenant.findByPk(id, {
-      attributes: ['id', 'slug', 'company_name', 'status', 'control_api_url'],
+      attributes: ['id', 'slug', 'company_name', 'status'],
     });
 
     if (!tenant) {
@@ -221,11 +221,7 @@ export const initializeTenant = async (req: Request, res: Response): Promise<Res
     return res.status(404).json({ success: false, error: 'Tenant not found' });
   }
 
-  const baseUrl = tenant.control_api_url;
-  if (!baseUrl) {
-    return res.status(422).json({ success: false, error: 'control_api_url não configurado para este tenant' });
-  }
-
+  const baseUrl = (process.env.BACKEND_URL ?? 'https://backend.averafit.app').replace(/\/$/, '');
   const { slug } = tenant;
   const steps: Record<string, unknown> = {};
 
@@ -303,18 +299,17 @@ export const initializeTenant = async (req: Request, res: Response): Promise<Res
 export const updateTenantSettings = async (req: Request, res: Response): Promise<Response> => {
   try {
     const { id } = req.params;
-    const { db_name, db_password, control_api_url, trial_ends_at } = req.body;
+    const { db_name, db_password, trial_ends_at } = req.body;
 
     const tenant = await Tenant.findByPk(id);
     if (!tenant) {
       return res.status(404).json({ success: false, error: 'Tenant not found' });
     }
 
-    const updates: Partial<{ db_name: string | null; db_password: string | null; control_api_url: string | null; trial_ends_at: string | null }> = {};
-    if (db_name !== undefined)         updates.db_name         = db_name         || null;
-    if (db_password !== undefined)     updates.db_password     = db_password ? encrypt(db_password) : null;
-    if (control_api_url !== undefined) updates.control_api_url = control_api_url || null;
-    if (trial_ends_at !== undefined)   updates.trial_ends_at   = trial_ends_at   || null;
+    const updates: Partial<{ db_name: string | null; db_password: string | null; trial_ends_at: string | null }> = {};
+    if (db_name !== undefined)       updates.db_name       = db_name       || null;
+    if (db_password !== undefined)   updates.db_password   = db_password ? encrypt(db_password) : null;
+    if (trial_ends_at !== undefined) updates.trial_ends_at = trial_ends_at || null;
 
     await tenant.update(updates);
     syncControlTenantConfig(tenant).catch((err) =>
@@ -325,10 +320,9 @@ export const updateTenantSettings = async (req: Request, res: Response): Promise
       success: true,
       message: 'Tenant settings updated',
       data: {
-        id:              tenant.id,
-        db_name:         tenant.db_name,
-        db_password:     tenant.db_password,
-        control_api_url: tenant.control_api_url,
+        id:          tenant.id,
+        db_name:     tenant.db_name,
+        db_password: tenant.db_password,
       },
     });
   } catch (error: any) {
